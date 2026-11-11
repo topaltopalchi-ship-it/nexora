@@ -116,7 +116,7 @@ create policy "members can view their memberships" on public.organization_member
 
 create policy "requester reads own needs" on public.needs for select to authenticated using (requester_id = (select auth.uid()));
 create policy "requester creates own need" on public.needs for insert to authenticated with check (requester_id = (select auth.uid()) and status = 'open');
-create policy "requester updates own open needs" on public.needs for update to authenticated using (requester_id = (select auth.uid()) and status = 'open') with check (requester_id = (select auth.uid()));
+create policy "requester updates own open needs" on public.needs for update to authenticated using (requester_id = (select auth.uid()) and status = 'open') with check (requester_id = (select auth.uid()) and status = 'open');
 
 create policy "published resources visible to signed-in users" on public.resources for select to authenticated using (status = 'verified' or provider_id = (select auth.uid()));
 create policy "provider submits resource for review" on public.resources for insert to authenticated with check (provider_id = (select auth.uid()) and status = 'pending_review' and verified_at is null);
