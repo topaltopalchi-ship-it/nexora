@@ -19,6 +19,7 @@ type Offer = {
   created_at: string;
 };
 type Match = { id: string; status: string; created_at: string };
+type Organization = { id: string; name: string; organization_type: string; city: string; verification_status: string; member_role: string; created_at: string };
 
 const statusLabel: Record<string, string> = {
   draft: "Draft",
@@ -34,6 +35,14 @@ export default function ProviderPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [email, setEmail] = useState("");
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [orgName, setOrgName] = useState("");
+  const [orgType, setOrgType] = useState("charity");
+  const [orgCity, setOrgCity] = useState("Dubai");
+  const [registrationReference, setRegistrationReference] = useState("");
+  const [orgEmail, setOrgEmail] = useState("");
+  const [orgWebsite, setOrgWebsite] = useState("");
+  const [orgBusy, setOrgBusy] = useState(false);
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -50,7 +59,7 @@ export default function ProviderPage() {
       if (authError || !user) { router.replace("/auth"); return; }
       setEmail(user.email ?? "");
       // RLS remains the security boundary; this explicit owner filter is defense in depth.
-      const [offerResult, matchResult] = await Promise.all([
+      const [offerResult, matchResult, organizationResult] = await Promise.all([
         supabase.from("resources")
           .select("id,title,category,resource_type,quantity,unit,city,status,available_until,created_at")
           .eq("provider_id", user.id)
@@ -64,6 +73,8 @@ export default function ProviderPage() {
       if (matchResult.error) throw matchResult.error;
       setOffers((offerResult.data ?? []) as Offer[]);
       setMatches((matchResult.data ?? []) as Match[]);
+      if (organizationResult.error) throw organizationResult.error;
+      setOrganizations((organizationResult.data ?? []) as Organization[]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load provider activity.");
     } finally {
@@ -80,6 +91,29 @@ export default function ProviderPage() {
   );
   const pendingCount = offers.filter(offer => offer.status === "pending_review").length;
   const verifiedCount = offers.filter(offer => offer.status === "verified").length;
+
+  async function submitOrganization(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOrgBusy(true);
+    setNotice("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("submit_provider_organization", {
+        p_name: orgName.trim(),
+        p_organization_type: orgType,
+        p_city: orgCity.trim(),
+        p_registration_reference: registrationReference.trim(),
+        p_contact_email: orgEmail.trim() || null,
+        p_website: orgWebsite.trim() || null,
+      });
+      if (error) throw error;
+      setOrgName(""); setRegistrationReference(""); setOrgEmail(""); setOrgWebsite("");
+      setNotice("Organization submitted. It remains pending until an authorized NEXORA administrator completes verification.");
+      await load(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not submit the organization.");
+    } finally { setOrgBusy(false); }
+  }
 
   async function signOut() {
     const supabase = createClient();
@@ -105,6 +139,26 @@ export default function ProviderPage() {
     </section>
 
     {notice && <p className="form-message" role="status">{notice}</p>}
+
+    <section className="dashboard-panel activity-panel" style={{ marginBottom: 18 }}>
+      <h2>Organizations you represent</h2>
+      {organizations.length === 0 ? <p className="empty-state">No organization is linked to your account yet.</p> :
+        organizations.map(org => <article className="activity-row" key={org.id}>
+          <div><strong>{org.name}</strong><small>{org.organization_type.replaceAll("_", " ")} · {org.city} · {org.member_role}</small></div>
+          <span className="status-pill">{org.verification_status === "verified" ? "Verified" : org.verification_status === "pending" ? "Pending verification" : org.verification_status}</span>
+        </article>)}
+      <p className="dashboard-safety">Submitting an organization does not verify it. An authorized administrator must independently check its legal identity and authorization before approval.</p>
+      <form className="auth-form" onSubmit={submitOrganization}>
+        <h3>Register an organization</h3>
+        <label>Legal or public organization name<input value={orgName} onChange={event => setOrgName(event.target.value)} required minLength={2} maxLength={160} /></label>
+        <label>Organization type<select value={orgType} onChange={event => setOrgType(event.target.value)}><option value="charity">Charity / NGO</option><option value="healthcare_provider">Healthcare provider</option><option value="pharmacy">Pharmacy</option><option value="accommodation_provider">Accommodation provider</option><option value="restaurant">Restaurant / food provider</option><option value="company">Company / other service</option></select></label>
+        <label>Service area<input value={orgCity} onChange={event => setOrgCity(event.target.value)} required maxLength={100} /></label>
+        <label>Registration or authorization reference<input value={registrationReference} onChange={event => setRegistrationReference(event.target.value)} required minLength={3} maxLength={120} placeholder="Reference checked privately by NEXORA" /></label>
+        <label>Organization contact email (optional)<input type="email" value={orgEmail} onChange={event => setOrgEmail(event.target.value)} maxLength={254} /></label>
+        <label>Official website (optional)<input type="url" value={orgWebsite} onChange={event => setOrgWebsite(event.target.value)} placeholder="https://" maxLength={300} /></label>
+        <button className="button button-primary auth-submit" disabled={orgBusy}>{orgBusy ? "Submitting…" : "Submit organization for verification"}</button>
+      </form>
+    </section>
 
     <section className="dashboard-grid" aria-label="Provider activity summary">
       <div className="dashboard-panel activity-panel">
