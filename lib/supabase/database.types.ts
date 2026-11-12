@@ -357,7 +357,6 @@ export type Database = {
         Args: { p_need_id: string }
         Returns: {
           city: string
-          enough_quantity: boolean
           public_summary: string
           quantity: number
           resource_id: string
