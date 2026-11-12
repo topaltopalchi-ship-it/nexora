@@ -1,13 +1,15 @@
 -- Trusted, server-enforced resource review for the NEXORA pilot.
 -- Only trusted database administrators may grant reviewer access.
 
+-- A rejected state is distinct from a temporary suspension.
+alter type public.resource_status add value if not exists 'rejected';
+
 create table public.platform_reviewers (
   user_id uuid primary key references auth.users(id) on delete cascade,
   active boolean not null default true,
   granted_at timestamptz not null default now(),
   granted_by uuid references auth.users(id)
 );
-
 alter table public.platform_reviewers enable row level security;
 revoke all on public.platform_reviewers from anon, authenticated;
 grant select on public.platform_reviewers to authenticated;
@@ -15,25 +17,7 @@ create policy "reviewers can inspect their own reviewer grant"
   on public.platform_reviewers for select to authenticated
   using (user_id = (select auth.uid()));
 
-create table public.resource_reviews (
-  id uuid primary key default gen_random_uuid(),
-  resource_id uuid not null references public.resources(id) on delete cascade,
-  reviewer_id uuid not null references auth.users(id),
-  decision text not null check (decision in ('approved','rejected')),
-  note text check (note is null or char_length(note) <= 1000),
-  reviewed_at timestamptz not null default now()
-);
-create index resource_reviews_resource_idx
-  on public.resource_reviews(resource_id, reviewed_at desc);
-alter table public.resource_reviews enable row level security;
-revoke all on public.resource_reviews from anon, authenticated;
-grant select on public.resource_reviews to authenticated;
-create policy "trusted reviewers can read review audit"
-  on public.resource_reviews for select to authenticated
-  using (public.is_platform_reviewer());
-
--- SECURITY DEFINER is used only for the two narrowly-scoped review operations.
--- Fully qualified names and an empty search_path prevent object-shadowing attacks.
+-- This helper exposes only a boolean and cannot be used to enumerate reviewers.
 create or replace function public.is_platform_reviewer()
 returns boolean
 language sql
@@ -48,12 +32,25 @@ as $$
       and r.active = true
   );
 $$;
-
 revoke all on function public.is_platform_reviewer() from public, anon;
 grant execute on function public.is_platform_reviewer() to authenticated;
 
+create table public.resource_reviews (
+  id uuid primary key default gen_random_uuid(),
+  resource_id uuid not null references public.resources(id) on delete cascade,
+  reviewer_id uuid not null references auth.users(id),
+  decision text not null check (decision in ('approved','rejected')),
+  note text check (note is null or char_length(note) <= 1000),
+  reviewed_at timestamptz not null default now()
+);
+create index resource_reviews_resource_idx
+  on public.resource_reviews(resource_id, reviewed_at desc);
+alter table public.resource_reviews enable row level security;
+revoke all on public.resource_reviews from anon, authenticated;
+grant select on public.resource_reviews to authenticated;
+
 -- A reviewer can only approve/reject a resource that is currently awaiting review.
--- The provider cannot call this successfully unless they have a separately granted reviewer role.
+-- The provider cannot call this successfully without a separately granted reviewer role.
 create or replace function public.review_resource(
   p_resource_id uuid,
   p_decision text,
@@ -100,15 +97,18 @@ begin
   return v_status;
 end;
 $$;
-
 revoke all on function public.review_resource(uuid, text, text) from public, anon;
 grant execute on function public.review_resource(uuid, text, text) to authenticated;
+
+create policy "trusted reviewers can read review audit"
+  on public.resource_reviews for select to authenticated
+  using (public.is_platform_reviewer());
 
 -- Allow trusted reviewers to see only the pending queue; provider visibility remains unchanged.
 create policy "trusted reviewers read pending resources"
   on public.resources for select to authenticated
   using (status = 'pending_review' and public.is_platform_reviewer());
 
--- A reviewer must be explicitly provisioned by a trusted operator in the Supabase SQL editor:
+-- Provision a reviewer manually as a trusted database operator after the user has signed up:
 -- insert into public.platform_reviewers (user_id, granted_by)
 -- select id, null from auth.users where email = 'trusted-reviewer@example.com';
