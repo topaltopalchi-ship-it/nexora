@@ -19,9 +19,9 @@ create or replace function public.is_platform_reviewer()
 returns boolean
 language sql
 stable
-security definer
+security invoker
 set search_path = ''
-as $$
+as $
   select exists (
     select 1
     from public.platform_reviewers r
