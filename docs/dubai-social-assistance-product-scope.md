@@ -43,6 +43,13 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 4. Only administrators can view pending organization verification records and approve or reject an application. Every decision requires a reason and creates an audit event.
 5. Organization membership controls which provider accounts may associate new assistance offers with that organization.
 
+### Organization team management
+- Owners can invite people by email as coordinator or read-only reviewer; clients cannot grant owner privileges.
+- Invitations use a random one-time token, are stored as a hash, expire after seven days, and are bound to the invited account's confirmed email address.
+- Owners can cancel pending invitations and remove members. The final owner cannot be removed.
+- Coordinators can participate in offer submission for their organization; reviewers can view organization-linked offers without being able to submit or edit them.
+- Organization membership and invitation changes are performed only through security-definer RPCs with explicit role checks. Invitation records are not directly readable by clients.
+
 ### Reviewer access and offer decisions\n- Reviewer accounts are provisioned manually by a trusted Supabase project administrator in `reviewer_access`; users cannot grant themselves access.\n- The `/review` queue is restricted by row-level security and a server-side database function.\n- Every approve, reject, or request-changes action requires a reason and creates an audit event.\n- Approval changes a pending offer to verified; rejection suspends it; requested changes return it to draft.\n\n### Human review
 1. Sensitive referrals enter a restricted reviewer queue.
 2. Reviewers see only the information necessary to make the referral decision.
