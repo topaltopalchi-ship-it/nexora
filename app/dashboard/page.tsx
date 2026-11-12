@@ -45,7 +45,8 @@ export default function DashboardPage() {
     setEmail(user.email ?? "");
     const [n,r,orgs] = await Promise.all([
       supabase.from("needs").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
-      supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false})
+      supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
+      supabase.rpc("my_provider_organizations")
     ]);
     if(n.error) setNotice(n.error.message); else setNeeds((n.data ?? []) as Row[]);
     if(r.error) setNotice(r.error.message); else setResources((r.data ?? []) as Row[]);
