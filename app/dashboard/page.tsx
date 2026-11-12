@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Language = "en" | "fa" | "ar";
 type Row = { id:string; title:string; category:string; status:string; city:string; created_at:string };
-type Suggestion = { resource_id:string; title:string; public_summary:string; city:string; quantity:number; enough_quantity:boolean };
+type Suggestion = { resource_id:string; title:string; public_summary:string; city:string; quantity:number };
 
 const copy = {
   en: {
@@ -20,7 +20,7 @@ const copy = {
     submitNeed:"Submit request", submitResource:"Submit for verification", submitting:"Submitting…",
     requestSent:"Your request has been submitted.", resourceSent:"Your resource is submitted and waiting for verification.",
     activity:"Your activity", requests:"Support requests", resources:"Your resources", noRequests:"No requests yet.",
-    noResources:"No resources submitted yet.", matches:"Verified resources that may help", forNeed:"Suggestions for your latest open request", noMatches:"No verified resources match this request in your city yet.", quantityFit:"Quantity may cover your request", quantityPartial:"Provider may have a smaller quantity", safety:"Resources are not visible to the community until reviewed. NEXORA is not an emergency service or a healthcare provider.",
+    noResources:"No resources submitted yet.", matches:"Verified resources that may help", forNeed:"Suggestions for your latest open request", noMatches:"No verified resources match this request in your city yet." , quantityLabel:"Available quantity", safety:"Resources are not visible to the community until reviewed. NEXORA is not an emergency service or a healthcare provider.",
     language:"Language", languageSaved:"Language preference saved.", loadError:"Could not load your account. Please sign in again.",
     categories:{food:"Food",healthcare:"Healthcare",housing:"Housing",transport:"Transport",other:"Other"},
     statuses:{open:"Open",reviewing:"Reviewing",matched:"Matched",in_progress:"In progress",resolved:"Resolved",closed:"Closed",draft:"Draft",pending_review:"Pending review",verified:"Verified",reserved:"Reserved",fulfilled:"Fulfilled",expired:"Expired",suspended:"Suspended"}
@@ -34,7 +34,7 @@ const copy = {
     submitNeed:"ثبت درخواست", submitResource:"ارسال برای بررسی", submitting:"در حال ارسال…",
     requestSent:"درخواست شما ثبت شد.", resourceSent:"منبع شما ثبت شد و در انتظار تأیید است.",
     activity:"فعالیت‌های شما", requests:"درخواست‌های حمایت", resources:"منابع شما", noRequests:"هنوز درخواستی ثبت نکرده‌اید.",
-    noResources:"هنوز منبعی ثبت نکرده‌اید.", matches:"منابع تأییدشده‌ای که ممکن است کمک کنند", forNeed:"پیشنهاد برای آخرین درخواست باز شما", noMatches:"فعلاً منبع تأییدشده‌ای در شهر شما با این درخواست تطبیق ندارد.", quantityFit:"تعداد منبع ممکن است پاسخگوی درخواست باشد", quantityPartial:"ممکن است تعداد منبع کمتر از نیاز شما باشد", safety:"منابع تا پیش از بررسی و تأیید برای دیگران قابل مشاهده نیستند. نکسورا مرکز اورژانس یا ارائه‌دهنده خدمات درمانی نیست.",
+    noResources:"هنوز منبعی ثبت نکرده‌اید.", matches:"منابع تأییدشده‌ای که ممکن است کمک کنند", forNeed:"پیشنهاد برای آخرین درخواست باز شما", noMatches:"فعلاً منبع تأییدشده‌ای در شهر شما با این درخواست تطبیق ندارد." , quantityLabel:"تعداد موجود", safety:"منابع تا پیش از بررسی و تأیید برای دیگران قابل مشاهده نیستند. نکسورا مرکز اورژانس یا ارائه‌دهنده خدمات درمانی نیست.",
     language:"زبان", languageSaved:"زبان انتخابی ذخیره شد.", loadError:"بارگذاری حساب کاربری ممکن نشد. لطفاً دوباره وارد شوید.",
     categories:{food:"غذا",healthcare:"درمان",housing:"مسکن",transport:"حمل‌ونقل",other:"سایر"},
     statuses:{open:"باز",reviewing:"در حال بررسی",matched:"تطبیق‌یافته",in_progress:"در حال انجام",resolved:"حل‌شده",closed:"بسته",draft:"پیش‌نویس",pending_review:"در انتظار بررسی",verified:"تأییدشده",reserved:"رزروشده",fulfilled:"انجام‌شده",expired:"منقضی",suspended:"تعلیق‌شده"}
@@ -48,7 +48,7 @@ const copy = {
     submitNeed:"إرسال الطلب", submitResource:"إرسال للتحقق", submitting:"جارٍ الإرسال…",
     requestSent:"تم إرسال طلبك.", resourceSent:"تم إرسال المورد وهو بانتظار التحقق.",
     activity:"نشاطك", requests:"طلبات الدعم", resources:"مواردك", noRequests:"لا توجد طلبات بعد.",
-    noResources:"لم يتم تقديم موارد بعد.", matches:"موارد موثوقة قد تساعدك", forNeed:"اقتراحات لطلبك المفتوح الأخير", noMatches:"لا توجد حالياً موارد موثوقة تطابق هذا الطلب في مدينتك.", quantityFit:"قد تكون الكمية كافية لطلبك", quantityPartial:"قد تكون كمية المورد أقل من احتياجك", safety:"لن تظهر الموارد للمجتمع قبل مراجعتها. نكسورا ليست خدمة طوارئ أو جهة رعاية صحية.",
+    noResources:"لم يتم تقديم موارد بعد.", matches:"موارد موثوقة قد تساعدك", forNeed:"اقتراحات لطلبك المفتوح الأخير", noMatches:"لا توجد حالياً موارد موثوقة تطابق هذا الطلب في مدينتك." , quantityLabel:"الكمية المتاحة", safety:"لن تظهر الموارد للمجتمع قبل مراجعتها. نكسورا ليست خدمة طوارئ أو جهة رعاية صحية.",
     language:"اللغة", languageSaved:"تم حفظ تفضيل اللغة.", loadError:"تعذر تحميل حسابك. يرجى تسجيل الدخول مجدداً.",
     categories:{food:"الغذاء",healthcare:"الرعاية الصحية",housing:"السكن",transport:"النقل",other:"أخرى"},
     statuses:{open:"مفتوح",reviewing:"قيد المراجعة",matched:"تمت المطابقة",in_progress:"قيد التنفيذ",resolved:"تم الحل",closed:"مغلق",draft:"مسودة",pending_review:"بانتظار المراجعة",verified:"تم التحقق",reserved:"محجوز",fulfilled:"تم التنفيذ",expired:"منتهي",suspended:"موقوف"}
@@ -170,7 +170,7 @@ export default function DashboardPage() {
         {suggestionNeedTitle && <section className="suggestions-panel">
           <h3>{t.matches}</h3><p className="empty-state">{t.forNeed}: {suggestionNeedTitle}</p>
           {suggestions.length === 0 ? <p className="empty-state">{t.noMatches}</p> : suggestions.map(item => <article className="activity-row suggestion-row" key={item.resource_id}>
-            <div><strong>{item.title}</strong><small>{item.public_summary}</small><small>{item.city} · {item.quantity} · {item.enough_quantity ? t.quantityFit : t.quantityPartial}</small></div>
+            <div><strong>{item.title}</strong><small>{item.public_summary}</small><small>{item.city} · {t.quantityLabel}: {item.quantity}</small></div>
           </article>)}
           <p className="dashboard-safety">{language === "fa" ? "این پیشنهادها صرفاً جهت اطلاع هستند؛ هیچ منبعی خودکار رزرو یا تخصیص داده نمی‌شود." : language === "ar" ? "هذه الاقتراحات للمعلومات فقط؛ لا يتم حجز أي مورد أو تخصيصه تلقائياً." : "Suggestions are informational only. No resource is reserved or allocated automatically."}</p>
         </section>}
