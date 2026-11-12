@@ -39,7 +39,7 @@ create policy "active reviewers can view pending organizations"
   on public.organizations for select to authenticated using (
     verification_status = 'pending' and exists (
       select 1 from public.reviewer_access ra
-      where ra.user_id = (select auth.uid()) and ra.is_active
+      where ra.user_id = (select auth.uid()) and ra.access_role = 'admin' and ra.is_active
     )
   );
 
