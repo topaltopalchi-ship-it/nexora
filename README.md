@@ -37,3 +37,14 @@ Initial schema: supabase/migrations/202611110001_initial_core.sql
 
 ## Status
 Foundation commit: product scope, security boundaries, and initial database migration. This repository is not yet connected to a provisioned NEXORA backend or deployed hosting environment.
+
+
+## GitHub Pages deployment
+
+NEXORA can be hosted as a static Next.js site on GitHub Pages while Supabase provides authentication, database, Row Level Security, and application data.
+
+- The GitHub Pages build uses Next.js static export (`output: "export"`).
+- GitHub Actions publishes the generated `out/` directory.
+- The Supabase browser client remains the application backend; no Supabase secret key is placed in the frontend.
+- The repository-project URL is `https://topaltopalchi-ship-it.github.io/nexora/` after the first successful Pages deployment.
+- A custom domain can be configured later in GitHub Pages without changing the Supabase architecture.
