@@ -353,6 +353,17 @@ export type Database = {
         Args: { p_decision: string; p_note?: string; p_resource_id: string }
         Returns: Database["public"]["Enums"]["resource_status"]
       }
+      suggest_resources_for_need: {
+        Args: { p_need_id: string }
+        Returns: {
+          city: string
+          enough_quantity: boolean
+          public_summary: string
+          quantity: number
+          resource_id: string
+          title: string
+        }[]
+      }
     }
     Enums: {
       match_status:
