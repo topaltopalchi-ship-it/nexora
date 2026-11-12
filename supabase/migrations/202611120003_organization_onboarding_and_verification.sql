@@ -12,7 +12,7 @@ create table if not exists public.organization_review_events (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   reviewer_id uuid not null references auth.users(id),
-  decision text not null check (decision in ('verified','rejected','changes_requested')),
+  decision text not null check (decision in ('verified','rejected')),
   reason text not null check (char_length(reason) between 3 and 1000),
   created_at timestamptz not null default now()
 );
@@ -134,7 +134,7 @@ begin
     where user_id = v_user and access_role = 'admin' and is_active) then
     raise exception 'Administrator access required';
   end if;
-  if p_decision is null or p_decision not in ('verified','rejected','changes_requested') then
+  if p_decision is null or p_decision not in ('verified','rejected') then
     raise exception 'Invalid organization review decision';
   end if;
   if p_reason is null or char_length(trim(p_reason)) < 3 or char_length(p_reason) > 1000 then
@@ -191,3 +191,57 @@ comment on column public.organizations.registration_reference is
   'Private verification reference; never expose in public organization listings.';
 comment on function public.review_provider_organization(uuid,text,text) is
   'Only active administrators can verify/reject pending organizations; all decisions are audited.';
+
+-- An organization-linked offer cannot become verified before the organization itself is verified.
+create or replace function public.review_resource_offer(
+  p_resource_id uuid,
+  p_decision text,
+  p_reason text
+) returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_status public.resource_status;
+  v_organization_id uuid;
+begin
+  if v_user is null then raise exception 'Authentication required'; end if;
+  if not exists (select 1 from public.reviewer_access
+    where user_id = v_user and is_active = true) then
+    raise exception 'Reviewer access required';
+  end if;
+  if p_decision is null or p_decision not in ('approved','rejected','changes_requested') then
+    raise exception 'Invalid review decision';
+  end if;
+  if p_reason is null or char_length(trim(p_reason)) < 3 or char_length(p_reason) > 1000 then
+    raise exception 'A review reason between 3 and 1000 characters is required';
+  end if;
+
+  select status, organization_id into v_status, v_organization_id
+    from public.resources where id = p_resource_id for update;
+  if not found then raise exception 'Resource offer not found'; end if;
+  if v_status <> 'pending_review' then raise exception 'Only pending offers can be reviewed'; end if;
+
+  if p_decision = 'approved' and v_organization_id is not null and not exists (
+    select 1 from public.organizations
+    where id = v_organization_id and verification_status = 'verified'
+  ) then
+    raise exception 'The linked organization must be verified before this offer can be approved';
+  end if;
+
+  update public.resources
+    set status = case p_decision
+      when 'approved' then 'verified'::public.resource_status
+      when 'rejected' then 'suspended'::public.resource_status
+      else 'draft'::public.resource_status end,
+      verified_at = case when p_decision = 'approved' then now() else null end,
+      updated_at = now()
+    where id = p_resource_id;
+  insert into public.resource_review_events(resource_id, reviewer_id, decision, reason)
+    values (p_resource_id, v_user, p_decision, trim(p_reason));
+end;
+$$;
+revoke all on function public.review_resource_offer(uuid,text,text) from public, anon;
+grant execute on function public.review_resource_offer(uuid,text,text) to authenticated;
