@@ -16,6 +16,9 @@ export default function DashboardPage() {
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
   const [city,setCity] = useState("Dubai");
+  const [urgency,setUrgency] = useState("3");
+  const [peopleCount,setPeopleCount] = useState("1");
+  const [preferredLanguage,setPreferredLanguage] = useState<"en"|"ar"|"fa">("en");
   const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState("");
   const [ready,setReady] = useState(false);
@@ -43,13 +46,13 @@ export default function DashboardPage() {
       const {data:{user}} = await supabase.auth.getUser();
       if(!user) { router.replace("/auth"); return; }
       if(tab === "need") {
-        const {error} = await supabase.from("needs").insert({requester_id:user.id,category,title:title.trim(),description:description.trim(),city,preferred_language:"en",status:"open"});
+        const {error} = await supabase.from("needs").insert({requester_id:user.id,category,title:title.trim(),description:description.trim(),city,urgency:Number(urgency),people_count:Number(peopleCount),preferred_language:preferredLanguage,status:"open"});
         if(error) throw error;
       } else {
         const {error} = await supabase.from("resources").insert({provider_id:user.id,category,title:title.trim(),public_summary:description.trim(),city,quantity:1,status:"pending_review"});
         if(error) throw error;
       }
-      setTitle(""); setDescription(""); setNotice(tab === "need" ? "Your request has been submitted." : "Your resource is submitted and waiting for verification.");
+      setTitle(""); setDescription(""); setUrgency("3"); setPeopleCount("1"); setNotice(tab === "need" ? "Your request has been submitted." : "Your resource is submitted and waiting for verification.");
       await load();
     } catch(err) { setNotice(err instanceof Error ? err.message : "Could not submit. Please try again."); }
     finally { setBusy(false); }
@@ -70,7 +73,12 @@ export default function DashboardPage() {
           <label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option value="food">Food</option><option value="healthcare">Healthcare</option><option value="housing">Housing</option><option value="transport">Transport</option><option value="other">Other</option></select></label>
           <label>{tab==="need"?"What support do you need?":"What can you provide?"}<input value={title} onChange={e=>setTitle(e.target.value)} required minLength={4} maxLength={120} placeholder={tab==="need"?"e.g. Grocery support":"e.g. Sealed food parcels"}/></label>
           <label>Details<textarea value={description} onChange={e=>setDescription(e.target.value)} required minLength={10} maxLength={1000} rows={4} placeholder="Share only the information needed. Do not include medical records or sensitive identity details."/></label>
-          <label>City<input value={city} onChange={e=>setCity(e.target.value)} required maxLength={100}/></label>
+          <label>City or area in Dubai<input value={city} onChange={e=>setCity(e.target.value)} required maxLength={100} placeholder="e.g. Deira, Al Barsha, Bur Dubai"/></label>
+          {tab === "need" && <>
+            <label>Urgency<select value={urgency} onChange={e=>setUrgency(e.target.value)}><option value="1">1 — Can wait</option><option value="2">2 — Low</option><option value="3">3 — Normal</option><option value="4">4 — High</option><option value="5">5 — Urgent — not an emergency service</option></select></label>
+            <label>Number of people needing support<input type="number" min="1" max="100" value={peopleCount} onChange={e=>setPeopleCount(e.target.value)} required/></label>
+            <label>Preferred contact language<select value={preferredLanguage} onChange={e=>setPreferredLanguage(e.target.value as "en"|"ar"|"fa")}><option value="en">English</option><option value="ar">العربية</option><option value="fa">فارسی</option></select></label>
+          </>}
           <button className="button button-primary auth-submit" disabled={busy}>{busy?"Submitting…":tab==="need"?"Submit request":"Submit for verification"} <span>↗</span></button>
         </form>
         {notice && <p className="form-message" role="status">{notice}</p>}
