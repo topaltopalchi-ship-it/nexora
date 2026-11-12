@@ -22,6 +22,14 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 4. Review consent and privacy information before submission.
 5. Track request status and receive safe next steps.
 
+### Offer help or register a service
+1. Individuals, restaurants, licensed healthcare providers, pharmacies, charities, and accommodation providers can submit an offer.
+2. Offer types include food parcels, prepared meals, clothing, medicines (licensed providers only), free medical consultations, temporary accommodation, transport, and other practical support.
+3. Capture the offer type, provider type, public summary, Dubai area, quantity/capacity, unit, availability end, and (where relevant) expiry date.
+4. Every new offer is private and pending review until an authorized reviewer verifies the provider and the offer.
+5. Availability is never promised until the provider confirms the specific referral.
+6. Medicines are not exchanged person-to-person; medicine offers require licensed/authorized providers and local regulatory review. Clinical services require credential verification. Accommodation referrals require human review and provider confirmation.
+
 ### Find suitable support
 1. Match only against active, verified resources.
 2. Rank suggestions using transparent factors such as category, service area, availability, and capacity.
@@ -43,7 +51,7 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 - No claim of 24/7 emergency response unless a staffed local partner and tested escalation agreement exist.
 - Emergency screens must use locally verified UAE contact details and be reviewed by local partners before release.
 - Do not expose beneficiary names, phone numbers, exact addresses, or sensitive request descriptions to public users.
-- Provider verification must be performed by authorized staff, not self-attested by the provider alone.
+- Provider verification must be performed by authorized staff, not self-attested by the provider alone.\n- Medicine offers must not enable person-to-person transfer and must remain unavailable until licensed-provider and local regulatory checks are complete.\n- Clinical and accommodation offers require additional human review before referral.
 
 ## Dubai pilot operating requirements
 
