@@ -6,6 +6,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+type Organization = {
+  id: string; name: string; organization_type: string; city: string;
+  registration_reference: string; contact_email: string | null; website: string | null;
+  created_at: string;
+};
 type Offer = {
   id: string;
   title: string;
@@ -23,6 +28,9 @@ type Offer = {
 
 export default function ReviewPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [organizationReason, setOrganizationReason] = useState<Record<string,string>>({});
   const [email, setEmail] = useState("");
   const [reason, setReason] = useState<Record<string,string>>({});
   const [notice, setNotice] = useState("");
@@ -42,6 +50,14 @@ export default function ReviewPage() {
       setReady(true);
       return;
     }
+    setIsAdmin(access.access_role === "admin");
+    if (access.access_role === "admin") {
+      const { data: pendingOrganizations, error: organizationError } = await supabase.from("organizations")
+        .select("id,name,organization_type,city,registration_reference,contact_email,website,created_at")
+        .eq("verification_status", "pending").order("created_at", { ascending: true });
+      if (organizationError) setNotice(organizationError.message);
+      else setOrganizations((pendingOrganizations ?? []) as Organization[]);
+    }
     const { data, error } = await supabase.from("resources")
       .select("id,title,category,resource_type,provider_type,public_summary,city,quantity,unit,available_until,expiry_date,created_at")
       .eq("status", "pending_review").order("created_at", { ascending: true });
@@ -51,6 +67,23 @@ export default function ReviewPage() {
   }
 
   useEffect(() => { void load(); }, []);
+
+  async function decideOrganization(id: string, decision: "verified"|"rejected") {
+    const note = (organizationReason[id] ?? "").trim();
+    if (note.length < 3) { setNotice("Add an organization verification reason (at least 3 characters)."); return; }
+    setBusy(id); setNotice("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("review_provider_organization", {
+        p_organization_id: id, p_decision: decision, p_reason: note
+      });
+      if (error) throw error;
+      setOrganizations(current => current.filter(org => org.id !== id));
+      setNotice(decision === "verified" ? "Organization verified." : "Organization rejected.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not review this organization.");
+    } finally { setBusy(null); }
+  }
 
   async function decide(id: string, decision: "approved"|"rejected"|"changes_requested") {
     const note = (reason[id] ?? "").trim();
@@ -82,6 +115,30 @@ export default function ReviewPage() {
       <p>Verify the provider and the offer before it becomes visible to the community.</p>
     </section>
     {notice && <p className="form-message" role="status">{notice}</p>}
+    {isAdmin && <section className="review-list" aria-label="Pending organization verification">
+      <h2>Organization verification</h2>
+      {organizations.length === 0 ? <div className="dashboard-panel"><p className="empty-state">No organizations are waiting for administrator verification.</p></div> :
+        organizations.map(org => <article className="dashboard-panel review-card" key={org.id}>
+          <div className="review-card-head">
+            <div><span className="kicker">ORGANIZATION APPLICATION</span><h2>{org.name}</h2><p>{org.organization_type.replaceAll("_", " ")} · {org.city}</p></div>
+            <span className="status-pill">Pending verification</span>
+          </div>
+          <dl className="review-meta">
+            <div><dt>Registration reference</dt><dd>{org.registration_reference}</dd></div>
+            {org.contact_email && <div><dt>Contact email</dt><dd>{org.contact_email}</dd></div>}
+            {org.website && <div><dt>Website</dt><dd><a href={org.website} target="_blank" rel="noreferrer">{org.website}</a></dd></div>}
+            <div><dt>Submitted</dt><dd>{new Date(org.created_at).toLocaleString()}</dd></div>
+          </dl>
+          <p className="dashboard-safety">Independently verify the legal entity, registration/authorization reference, operating status and relevant service-specific credentials using trusted sources. Do not approve based on self-submitted information alone.</p>
+          <label className="review-reason">Verification note (required)
+            <textarea rows={3} minLength={3} maxLength={1000} value={organizationReason[org.id] ?? ""} onChange={event => setOrganizationReason(current => ({ ...current, [org.id]: event.target.value }))} placeholder="Record the external checks performed and evidence reference." />
+          </label>
+          <div className="review-actions">
+            <button className="button button-primary" disabled={busy === org.id} onClick={() => void decideOrganization(org.id, "verified")}>Verify organization</button>
+            <button className="review-danger" disabled={busy === org.id} onClick={() => void decideOrganization(org.id, "rejected")}>Reject application</button>
+          </div>
+        </article>)}
+    </section>}
     <section className="review-list" aria-label="Pending provider offers">
       {offers.length === 0 ? <div className="dashboard-panel"><p className="empty-state">No offers are waiting for review.</p></div> :
         offers.map(offer => <article className="dashboard-panel review-card" key={offer.id}>
