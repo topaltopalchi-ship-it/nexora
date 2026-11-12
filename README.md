@@ -39,8 +39,9 @@ Initial schema: supabase/migrations/202611110001_initial_core.sql
 - English, Persian, and Arabic landing page, authentication, and dashboard interfaces.
 - Supabase email/password sign-up and sign-in; new accounts store their chosen language and account purpose.
 - Authenticated users can submit support requests and resources for review.
+- Trusted reviewers have a multilingual review console at `/review`, backed by a database allowlist, a permission-checked decision function, and an audit log.
 - Row Level Security keeps personal requests private and prevents providers from self-verifying resources.
 - Supabase provisioning and trusted reviewer/server workflows are still required before a public pilot.
 - No production hosting or live AI matching engine is configured yet.
 
-See [Supabase setup and launch checklist](docs/SUPABASE_SETUP.md) before deploying.
+Apply all three migrations and provision trusted reviewers before testing the review console. See [Supabase setup and launch checklist](docs/SUPABASE_SETUP.md) before deploying.
