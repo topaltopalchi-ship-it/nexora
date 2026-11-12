@@ -19,6 +19,12 @@ export default function DashboardPage() {
   const [urgency,setUrgency] = useState("3");
   const [peopleCount,setPeopleCount] = useState("1");
   const [preferredLanguage,setPreferredLanguage] = useState<"en"|"ar"|"fa">("en");
+  const [resourceType,setResourceType] = useState("food_parcels");
+  const [providerType,setProviderType] = useState("individual");
+  const [quantity,setQuantity] = useState("1");
+  const [unit,setUnit] = useState("items");
+  const [availableUntil,setAvailableUntil] = useState("");
+  const [expiryDate,setExpiryDate] = useState("");
   const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState("");
   const [ready,setReady] = useState(false);
@@ -49,10 +55,11 @@ export default function DashboardPage() {
         const {error} = await supabase.from("needs").insert({requester_id:user.id,category,title:title.trim(),description:description.trim(),city,urgency:Number(urgency),people_count:Number(peopleCount),preferred_language:preferredLanguage,status:"open"});
         if(error) throw error;
       } else {
-        const {error} = await supabase.from("resources").insert({provider_id:user.id,category,title:title.trim(),public_summary:description.trim(),city,quantity:1,status:"pending_review"});
+        const categoryForResource = resourceType === "meals" || resourceType === "food_parcels" ? "food" : resourceType === "medical_consultation" || resourceType === "medicine" ? "healthcare" : resourceType === "accommodation" ? "housing" : "other";
+        const {error} = await supabase.from("resources").insert({provider_id:user.id,category:categoryForResource,resource_type:resourceType,provider_type:providerType,title:title.trim(),public_summary:description.trim(),city,quantity:Number(quantity),unit,available_until:availableUntil || null,expiry_date:expiryDate || null,status:"pending_review"});
         if(error) throw error;
       }
-      setTitle(""); setDescription(""); setUrgency("3"); setPeopleCount("1"); setNotice(tab === "need" ? "Your request has been submitted." : "Your resource is submitted and waiting for verification.");
+      setTitle(""); setDescription(""); setUrgency("3"); setPeopleCount("1"); setQuantity("1"); setAvailableUntil(""); setExpiryDate(""); setNotice(tab === "need" ? "Your request has been submitted." : "Your resource is submitted and waiting for verification.");
       await load();
     } catch(err) { setNotice(err instanceof Error ? err.message : "Could not submit. Please try again."); }
     finally { setBusy(false); }
@@ -70,9 +77,24 @@ export default function DashboardPage() {
       <div className="dashboard-panel">
         <div className="auth-tabs"><button className={tab==="need"?"active":""} onClick={()=>{setTab("need");setNotice("");}}>Request support</button><button className={tab==="resource"?"active":""} onClick={()=>{setTab("resource");setNotice("");}}>Offer a resource</button></div>
         <form className="auth-form" onSubmit={submit}>
-          <label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option value="food">Food</option><option value="healthcare">Healthcare</option><option value="housing">Housing</option><option value="transport">Transport</option><option value="other">Other</option></select></label>
+          {tab === "need" && <label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option value="food">Food</option><option value="healthcare">Healthcare</option><option value="housing">Housing</option><option value="transport">Transport</option><option value="other">Other</option></select></label>}
+          {tab === "resource" && <>
+            <label>What kind of help are you offering?<select value={resourceType} onChange={e=>setResourceType(e.target.value)}>
+              <option value="food_parcels">Food parcels / groceries</option><option value="meals">Prepared meals / restaurant meals</option><option value="clothing">Clothing</option><option value="medicine">Medicines (licensed providers only)</option><option value="medical_consultation">Free medical consultation</option><option value="accommodation">Temporary accommodation / sleeping space</option><option value="transport">Transport</option><option value="other">Other support</option>
+            </select></label>
+            <label>Provider type<select value={providerType} onChange={e=>setProviderType(e.target.value)}><option value="individual">Individual volunteer</option><option value="restaurant">Restaurant / food business</option><option value="healthcare_provider">Licensed healthcare provider</option><option value="pharmacy">Licensed pharmacy</option><option value="charity">Charity / NGO</option><option value="accommodation_provider">Accommodation provider</option><option value="company">Company / other organization</option></select></label>
+          </>}
           <label>{tab==="need"?"What support do you need?":"What can you provide?"}<input value={title} onChange={e=>setTitle(e.target.value)} required minLength={4} maxLength={120} placeholder={tab==="need"?"e.g. Grocery support":"e.g. Sealed food parcels"}/></label>
           <label>Details<textarea value={description} onChange={e=>setDescription(e.target.value)} required minLength={10} maxLength={1000} rows={4} placeholder="Share only the information needed. Do not include medical records or sensitive identity details."/></label>
+          {tab === "resource" && <>
+            <label>Quantity or capacity<input type="number" min="1" max="10000" value={quantity} onChange={e=>setQuantity(e.target.value)} required/></label>
+            <label>Unit<select value={unit} onChange={e=>setUnit(e.target.value)}><option value="items">Items</option><option value="meals">Meals</option><option value="food_parcels">Food parcels</option><option value="people">People / places</option><option value="consultations">Consultations</option><option value="hours">Hours</option><option value="sets">Sets</option></select></label>
+            <label>Available until (optional)<input type="datetime-local" value={availableUntil} onChange={e=>setAvailableUntil(e.target.value)}/></label>
+            {resourceType === "medicine" && <label>Medicine expiry date<input type="date" value={expiryDate} onChange={e=>setExpiryDate(e.target.value)}/></label>}
+            {resourceType === "medicine" && <p className="dashboard-safety">Medicine offers are not published or matched automatically. Only licensed pharmacies or authorized organizations may proceed after verification and local regulatory review. Person-to-person medicine transfers are not supported.</p>}
+            {resourceType === "medical_consultation" && <p className="dashboard-safety">Clinical services require provider credential verification. NEXORA does not triage, diagnose, or recommend treatment.</p>}
+            {resourceType === "accommodation" && <p className="dashboard-safety">Accommodation offers require human review and provider confirmation before any referral. Do not publish a private home address.</p>}
+          </>}
           <label>City or area in Dubai<input value={city} onChange={e=>setCity(e.target.value)} required maxLength={100} placeholder="e.g. Deira, Al Barsha, Bur Dubai"/></label>
           {tab === "need" && <>
             <label>Urgency<select value={urgency} onChange={e=>setUrgency(e.target.value)}><option value="1">1 — Can wait</option><option value="2">2 — Low</option><option value="3">3 — Normal</option><option value="4">4 — High</option><option value="5">5 — Urgent — not an emergency service</option></select></label>
@@ -90,6 +112,6 @@ export default function DashboardPage() {
         {resources.length===0?<p className="empty-state">No resources submitted yet.</p>:resources.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{x.category} · {x.city}</small></div><span className="status-pill">{x.status}</span></article>)}
       </div>
     </section>
-    <p className="dashboard-safety">Resources are not visible to the community until reviewed. NEXORA is not an emergency service or a healthcare provider.</p>
+    <p className="dashboard-safety">Offers stay private until reviewed and verified. Availability is not guaranteed until the provider confirms it. Medicines, clinical services, and accommodation require additional checks. NEXORA is not an emergency service or a healthcare provider.</p>
   </main>;
 }
