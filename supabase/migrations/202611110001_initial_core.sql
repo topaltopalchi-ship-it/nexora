@@ -20,7 +20,7 @@ create table public.organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   organization_type text not null,
-  city text not null default 'Dubai',
+  city text not null default 'Tabriz',
   verification_status text not null default 'pending' check (verification_status in ('pending','verified','rejected','suspended')),
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now()
@@ -38,7 +38,7 @@ create table public.needs (
   category public.need_category not null,
   title text not null check (char_length(title) between 4 and 120),
   description text not null check (char_length(description) between 10 and 3000),
-  city text not null default 'Dubai',
+  city text not null default 'Tabriz',
   urgency smallint not null default 3 check (urgency between 1 and 5),
   people_count integer not null default 1 check (people_count between 1 and 100),
   preferred_language text not null default 'en' check (preferred_language in ('en','ar','fa')),
@@ -53,7 +53,7 @@ create table public.resources (
   category public.need_category not null,
   title text not null check (char_length(title) between 4 and 120),
   public_summary text not null check (char_length(public_summary) between 10 and 1000),
-  city text not null default 'Dubai',
+  city text not null default 'Tabriz',
   quantity integer not null default 1 check (quantity between 1 and 10000),
   available_until timestamptz,
   status public.resource_status not null default 'pending_review',
@@ -134,3 +134,4 @@ create policy "participants can append outcome events" on public.outcome_events 
 
 -- Client users cannot create matches or change match status.
 -- Verification/matching must run through trusted server workflows with human approval gates.
+\n\n-- Virtual Tabriz commerce foundation\ncreate table public.market_stores (\n  id uuid primary key default gen_random_uuid(),\n  owner_id uuid not null references auth.users(id),\n  name text not null,\n  description text not null,\n  city text not null default 'Tabriz',\n  district text not null,\n  address text,\n  latitude numeric,\n  longitude numeric,\n  voice_enabled boolean not null default true,\n  verification_status text not null default 'pending' check (verification_status in ('pending','verified','suspended')),\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);\ncreate table public.market_products (\n  id uuid primary key default gen_random_uuid(),\n  store_id uuid not null references public.market_stores(id) on delete cascade,\n  name text not null,\n  description text not null default '',\n  price numeric(12,2) not null check (price >= 0),\n  currency text not null default 'IRR',\n  stock integer not null default 0 check (stock >= 0),\n  image_url text,\n  active boolean not null default true,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);\ncreate index market_stores_city_district_idx on public.market_stores(city, district);\ncreate index market_products_store_idx on public.market_products(store_id, active);\nalter table public.market_stores enable row level security;\nalter table public.market_products enable row level security;\ngrant select on public.market_stores, public.market_products to authenticated;\ngrant insert, update on public.market_stores to authenticated;\ngrant insert, update on public.market_products to authenticated;\ncreate policy "verified stores visible to users" on public.market_stores for select to authenticated using (verification_status = 'verified' or owner_id = (select auth.uid()));\ncreate policy "store owner creates store" on public.market_stores for insert to authenticated with check (owner_id = (select auth.uid()) and verification_status = 'pending');\ncreate policy "store owner edits pending store" on public.market_stores for update to authenticated using (owner_id = (select auth.uid()) and verification_status = 'pending') with check (owner_id = (select auth.uid()) and verification_status = 'pending');\ncreate policy "products of visible stores are readable" on public.market_products for select to authenticated using (active = true and exists (select 1 from public.market_stores s where s.id = store_id and (s.verification_status = 'verified' or s.owner_id = (select auth.uid()))));\ncreate policy "store owner creates products" on public.market_products for insert to authenticated with check (exists (select 1 from public.market_stores s where s.id = store_id and s.owner_id = (select auth.uid())));\ncreate policy "store owner updates products" on public.market_products for update to authenticated using (exists (select 1 from public.market_stores s where s.id = store_id and s.owner_id = (select auth.uid())));\n
