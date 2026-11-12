@@ -67,6 +67,7 @@ export default function DashboardPage() {
   const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState("");
   const [ready,setReady] = useState(false);
+  const [isReviewer,setIsReviewer] = useState(false);
   const router = useRouter();
   const t = copy[language];
 
@@ -75,11 +76,13 @@ export default function DashboardPage() {
     const {data:{user},error} = await supabase.auth.getUser();
     if(error || !user) { router.replace("/auth"); return; }
     setEmail(user.email ?? "");
-    const [profile,n,r] = await Promise.all([
+    const [profile,n,r,reviewer] = await Promise.all([
       supabase.from("profiles").select("preferred_language").eq("id",user.id).maybeSingle(),
       supabase.from("needs").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
-      supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false})
+      supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
+      supabase.rpc("is_platform_reviewer")
     ]);
+    setIsReviewer(!reviewer.error && Boolean(reviewer.data));
     if(profile.data?.preferred_language === "fa" || profile.data?.preferred_language === "ar" || profile.data?.preferred_language === "en") setLanguage(profile.data.preferred_language);
     if(n.error) setNotice(n.error.message); else setNeeds((n.data ?? []) as Row[]);
     if(r.error) setNotice(r.error.message); else setResources((r.data ?? []) as Row[]);
@@ -128,6 +131,7 @@ export default function DashboardPage() {
       <Link className="brand" href="/"><span className="brand-mark">N</span><span>NEXORA<span className="brand-ai"> AI</span></span></Link>
       <div className="dashboard-user">
         <label className="language-control"><span>{t.language}</span><select aria-label={t.language} value={language} onChange={e=>void changeLanguage(e.target.value)}><option value="en">English</option><option value="fa">فارسی</option><option value="ar">العربية</option></select></label>
+        {isReviewer && <Link href="/review">{language === "fa" ? "بررسی منابع" : language === "ar" ? "مراجعة الموارد" : "Review resources"}</Link>}
         <span>{email}</span><button onClick={signOut}>{t.signOut}</button>
       </div>
     </header>
