@@ -36,7 +36,7 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 3. Explain why each resource is suggested and show when its information was last verified.
 4. Never treat a score as a guarantee of eligibility or service availability.
 
-### Human review
+### Reviewer access and offer decisions\n- Reviewer accounts are provisioned manually by a trusted Supabase project administrator in `reviewer_access`; users cannot grant themselves access.\n- The `/review` queue is restricted by row-level security and a server-side database function.\n- Every approve, reject, or request-changes action requires a reason and creates an audit event.\n- Approval changes a pending offer to verified; rejection suspends it; requested changes return it to draft.\n\n### Human review
 1. Sensitive referrals enter a restricted reviewer queue.
 2. Reviewers see only the information necessary to make the referral decision.
 3. Reviewer actions are approve, reject, or request clarification, with a reason.
