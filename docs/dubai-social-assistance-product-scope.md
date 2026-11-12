@@ -57,7 +57,13 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 - Coordinators can participate in offer submission for their organization; reviewers can view organization-linked offers without being able to submit or edit them.
 - Organization membership and invitation changes are performed only through security-definer RPCs with explicit role checks. Invitation records are not directly readable by clients.
 
-### Reviewer access and offer decisions\n- Reviewer accounts are provisioned manually by a trusted Supabase project administrator in `reviewer_access`; users cannot grant themselves access.\n- The `/review` queue is restricted by row-level security and a server-side database function.\n- Every approve, reject, or request-changes action requires a reason and creates an audit event.\n- Approval changes a pending offer to verified; rejection suspends it; requested changes return it to draft.\n\n### Human review
+### Reviewer access and offer decisions
+- Reviewer accounts are provisioned manually by a trusted Supabase project administrator in `reviewer_access`; users cannot grant themselves access.
+- The `/review` queue is restricted by row-level security and a server-side database function.
+- Every approve, reject, or request-changes action requires a reason and creates an audit event.
+- Approval changes a pending offer to verified; rejection suspends it; requested changes return it to draft.
+
+### Human review
 1. Sensitive referrals enter a restricted reviewer queue.
 2. Reviewers see only the information necessary to make the referral decision.
 3. Reviewer actions are approve, reject, or request clarification, with a reason.
@@ -72,7 +78,9 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 - No claim of 24/7 emergency response unless a staffed local partner and tested escalation agreement exist.
 - Emergency screens must use locally verified UAE contact details and be reviewed by local partners before release.
 - Do not expose beneficiary names, phone numbers, exact addresses, or sensitive request descriptions to public users.
-- Provider verification must be performed by authorized staff, not self-attested by the provider alone.\n- Medicine offers must not enable person-to-person transfer and must remain unavailable until licensed-provider and local regulatory checks are complete.\n- Clinical and accommodation offers require additional human review before referral.
+- Provider verification must be performed by authorized staff, not self-attested by the provider alone.
+- Medicine offers must not enable person-to-person transfer and must remain unavailable until licensed-provider and local regulatory checks are complete.
+- Clinical and accommodation offers require additional human review before referral.
 
 ## Dubai pilot operating requirements
 
