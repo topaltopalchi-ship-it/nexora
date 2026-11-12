@@ -1,3 +1,5 @@
+import "./game.css";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,7 +39,6 @@ export default function GamePage() {
         <a href="/" className="game-brand">NEXORA <span>MARKET</span></a>
         <span className="device-badge">{device === "samsung" ? "SAMSUNG" : "IPHONE"}</span>
       </header>
-
       <section className="market-scene" aria-label="NEXORA virtual market">
         <div className="sky" />
         <div className="market-building">
@@ -48,30 +49,16 @@ export default function GamePage() {
             <div className="store store-c"><b>HOME</b><span>Discover</span></div>
           </div>
           <div className="door" />
-          <div className="avatar">
-            <div className="avatar-head" />
-            <div className="avatar-body" />
-          </div>
+          <div className="avatar"><div className="avatar-head" /><div className="avatar-body" /></div>
         </div>
-
-        <div className="touch-hint">
-          <div className="joystick"><span /></div>
-          <div className="hint-text">Move around the market<br /><small>Tap a shop to enter</small></div>
-        </div>
-
+        <div className="touch-hint"><div className="joystick"><span /></div><div className="hint-text">Move around the market<br /><small>Tap a shop to enter</small></div></div>
         <div className="action-pad">
           <button onClick={() => setRunning(true)} aria-label="Interact">↗</button>
           <button onClick={() => setRunning(false)} aria-label="Stop">●</button>
         </div>
-
         <div className={running ? "toast visible" : "toast"}>Entering NEXORA Market…</div>
       </section>
-
-      <nav className="game-nav">
-        <button>⌂<span>Market</span></button>
-        <button>◉<span>Stores</span></button>
-        <button>◌<span>Profile</span></button>
-      </nav>
+      <nav className="game-nav"><button>⌂<span>Market</span></button><button>◉<span>Stores</span></button><button>◌<span>Profile</span></button></nav>
     </main>
   );
 }
