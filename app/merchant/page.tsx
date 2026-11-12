@@ -1,5 +1,7 @@
 "use client";
 
+import "./merchant.css";
+
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
