@@ -20,6 +20,8 @@ type Offer = {
 };
 type Match = { id: string; status: string; created_at: string };
 type Organization = { id: string; name: string; organization_type: string; city: string; verification_status: string; member_role: string; created_at: string };
+type TeamMember = { user_id: string; member_role: string; display_name: string | null; email: string | null; joined_at: string };
+type TeamInvite = { id: string; email: string; member_role: string; expires_at: string; created_at: string };
 
 const statusLabel: Record<string, string> = {
   draft: "Draft",
@@ -43,6 +45,13 @@ export default function ProviderPage() {
   const [orgEmail, setOrgEmail] = useState("");
   const [orgWebsite, setOrgWebsite] = useState("");
   const [orgBusy, setOrgBusy] = useState(false);
+  const [teamOrgId, setTeamOrgId] = useState("");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamInvites, setTeamInvites] = useState<TeamInvite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("coordinator");
+  const [inviteToken, setInviteToken] = useState("");
+  const [teamBusy, setTeamBusy] = useState(false);
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -84,6 +93,63 @@ export default function ProviderPage() {
   }, [router]);
 
   useEffect(() => { void load(); }, [load]);
+
+  const loadTeam = useCallback(async (organizationId: string) => {
+    if (!organizationId) { setTeamMembers([]); setTeamInvites([]); return; }
+    const supabase = createClient();
+    const [membersResult, invitesResult] = await Promise.all([
+      supabase.rpc("my_organization_members", { p_organization_id: organizationId }),
+      supabase.rpc("my_organization_invitations", { p_organization_id: organizationId }),
+    ]);
+    if (membersResult.error) throw membersResult.error;
+    setTeamMembers((membersResult.data ?? []) as TeamMember[]);
+    if (!invitesResult.error) setTeamInvites((invitesResult.data ?? []) as TeamInvite[]);
+    else setTeamInvites([]);
+  }, []);
+
+  useEffect(() => {
+    if (teamOrgId) void loadTeam(teamOrgId).catch(error => setNotice(error instanceof Error ? error.message : "Could not load organization team."));
+  }, [teamOrgId, loadTeam]);
+
+  async function inviteMember(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setTeamBusy(true); setInviteToken(""); setNotice("");
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("invite_organization_member", {
+        p_organization_id: teamOrgId, p_email: inviteEmail.trim(), p_member_role: inviteRole
+      });
+      if (error) throw error;
+      setInviteToken(data as string); setInviteEmail("");
+      await loadTeam(teamOrgId);
+      setNotice("Invitation created. Share the one-time token securely with the invited person.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not create invitation."); }
+    finally { setTeamBusy(false); }
+  }
+
+  async function removeMember(userId: string) {
+    if (!window.confirm("Remove this member from the organization?")) return;
+    setTeamBusy(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("revoke_organization_member", {
+        p_organization_id: teamOrgId, p_member_user_id: userId
+      });
+      if (error) throw error;
+      await loadTeam(teamOrgId);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not remove member."); }
+    finally { setTeamBusy(false); }
+  }
+
+  async function cancelInvite(invitationId: string) {
+    setTeamBusy(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("cancel_organization_invitation", { p_invitation_id: invitationId });
+      if (error) throw error;
+      await loadTeam(teamOrgId);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not cancel invitation."); }
+    finally { setTeamBusy(false); }
+  }
 
   const visibleOffers = useMemo(
     () => filter === "all" ? offers : offers.filter(offer => offer.status === filter),
@@ -147,6 +213,27 @@ export default function ProviderPage() {
           <div><strong>{org.name}</strong><small>{org.organization_type.replaceAll("_", " ")} · {org.city} · {org.member_role}</small></div>
           <span className="status-pill">{org.verification_status === "verified" ? "Verified" : org.verification_status === "pending" ? "Pending verification" : org.verification_status}</span>
         </article>)}
+      {organizations.some(org => org.member_role === "owner") && <section className="dashboard-panel activity-panel" style={{ marginTop: 16 }}>
+        <h3>Organization team</h3>
+        <label>Manage organization<select value={teamOrgId} onChange={event => setTeamOrgId(event.target.value)}>{organizations.filter(org => org.member_role === "owner").map(org => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>
+        <form className="auth-form" onSubmit={inviteMember}>
+          <h4>Invite a team member</h4>
+          <label>Member email<input type="email" required value={inviteEmail} onChange={event => setInviteEmail(event.target.value)} /></label>
+          <label>Role<select value={inviteRole} onChange={event => setInviteRole(event.target.value)}><option value="coordinator">Coordinator — manage assistance offers</option><option value="reviewer">Reviewer — view organization-linked offers</option></select></label>
+          <button className="button button-primary" disabled={teamBusy || !teamOrgId}>{teamBusy ? "Working…" : "Create invitation"}</button>
+        </form>
+        {inviteToken && <div className="form-message"><strong>One-time invitation token</strong><p>{inviteToken}</p><small>Send this token only to the invited email address. It expires after 7 days and can be used once at /invite.</small></div>}
+        <h4>Current members</h4>
+        {teamMembers.map(member => <article className="activity-row" key={member.user_id}>
+          <div><strong>{member.display_name || member.email || member.user_id}</strong><small>{member.email} · {member.member_role}</small></div>
+          {member.member_role !== "owner" && <button className="review-danger" disabled={teamBusy} onClick={() => void removeMember(member.user_id)}>Remove</button>}
+        </article>)}
+        <h4>Pending invitations</h4>
+        {teamInvites.length === 0 ? <p className="empty-state">No pending invitations.</p> : teamInvites.map(invite => <article className="activity-row" key={invite.id}>
+          <div><strong>{invite.email}</strong><small>{invite.member_role} · expires {new Date(invite.expires_at).toLocaleDateString()}</small></div>
+          <button className="review-danger" disabled={teamBusy} onClick={() => void cancelInvite(invite.id)}>Cancel</button>
+        </article>)}
+      </section>}
       <p className="dashboard-safety">Submitting an organization does not verify it. An authorized administrator must independently check its legal identity and authorization before approval.</p>
       <form className="auth-form" onSubmit={submitOrganization}>
         <h3>Register an organization</h3>
