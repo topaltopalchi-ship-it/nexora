@@ -33,15 +33,17 @@ Prerequisites: Node.js 22+, npm.
 
 Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY after the dedicated NEXORA Supabase project is provisioned. Never put a service-role/secret key in browser variables.
 
-Initial schema: supabase/migrations/202611110001_initial_core.sql
+Database migrations: `supabase/migrations/` (apply all files in filename order to a fresh dedicated project)
 
 ## Current implementation status
 - English, Persian, and Arabic landing page, authentication, and dashboard interfaces.
 - Supabase email/password sign-up and sign-in; new accounts store their chosen language and account purpose.
 - Authenticated users can submit support requests and resources for review.
 - Trusted reviewers have a multilingual review console at `/review`, backed by a database allowlist, a permission-checked decision function, and an audit log.
-- Row Level Security keeps personal requests private and prevents providers from self-verifying resources.
-- Supabase provisioning and trusted reviewer/server workflows are still required before a public pilot.
-- No production hosting or live AI matching engine is configured yet.
+- A read-only suggestion engine recommends up to 10 verified resources for a user's latest open need when category and city match; it does not create matches, reserve resources, or allocate support automatically.
+- Row Level Security is enabled on all nine public tables; personal requests remain private and providers cannot self-verify resources.
+- The dedicated Supabase project is provisioned and the live schema, policies, and migration history have been checked.
+- The production web host, Auth redirect domain/email delivery, and first trusted reviewer still need configuration.
+- AI matching and privileged server workflows remain future work; current suggestions are deterministic and transparent.
 
-Apply all three migrations and provision trusted reviewers before testing the review console. See [Supabase setup and launch checklist](docs/SUPABASE_SETUP.md) before deploying.
+For a fresh Supabase project, apply all migration files in filename order. The linked NEXORA Supabase project has already been provisioned. Register the first reviewer account, then grant reviewer status using the owner-only SQL in the setup guide. See [Supabase setup and launch checklist](docs/SUPABASE_SETUP.md) before deploying.
