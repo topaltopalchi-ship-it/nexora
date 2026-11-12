@@ -63,13 +63,28 @@ Use two separate test accounts:
 - Change the dashboard language to English, Persian, and Arabic; reload the page and confirm the saved language is restored.
 - Confirm that the language used for a new support request matches the selected profile language.
 
-The current repository does not yet include a trusted reviewer console or a server-side verification workflow. Do not manually weaken RLS or allow providers to self-verify resources to make this test pass. Reviewer provisioning and verification are a separate launch gate.
+The reviewer console is available at `/review`. The trusted-review migration adds a private reviewer allowlist, a database-enforced review function, a distinct rejected state, and an audit log. Providers cannot grant themselves reviewer access or change a pending resource to verified. Do not manually weaken RLS.
+
+### Provision the first trusted reviewer
+
+After the reviewer has created an account, run this statement in the Supabase SQL Editor as the project owner. Replace the email with the exact address of the trusted reviewer:
+
+```sql
+insert into public.platform_reviewers (user_id, granted_by)
+select id, null
+from auth.users
+where lower(email) = lower('trusted-reviewer@example.com')
+on conflict (user_id) do update set active = true;
+```
+
+To revoke access, run `update public.platform_reviewers set active = false where user_id = '<user-uuid>';`. Never expose reviewer provisioning through the public client.
 
 ## 6. Before a public pilot
 
 Complete the following before using real people or real support cases:
 
-- Add trusted server-side reviewer role management and audit logging.
+- Provision at least two trusted reviewers using the SQL below; verify that non-reviewers cannot open the queue or call the review function.
+- Test approval, rejection, duplicate review attempts, and audit records using separate provider and reviewer accounts.
 - Configure rate limits, abuse reporting, account recovery, and operational monitoring.
 - Publish privacy, consent, retention, and deletion policies; obtain UAE legal review.
 - Establish staffed local partners for food safety, licensed healthcare referrals, and vetted accommodation.
