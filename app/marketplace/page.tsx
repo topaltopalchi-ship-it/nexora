@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 type Store = { id:string; name:string; area:string; category:string; accent:string; description:string; products:string[] };
@@ -17,6 +18,9 @@ export default function MarketplacePage(){
   const [category,setCategory]=useState("All");
   const [search,setSearch]=useState("");
   const [selected,setSelected]=useState<Store|null>(null);
+  const [callState,setCallState]=useState<"idle"|"requesting"|"requested">("idle");
+  const [cartCount,setCartCount]=useState(0);
+  async function requestVoice(){setCallState("requesting");try{const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user){window.location.href="/auth";return;}if(!selected)return;const {error}=await supabase.from("market_voice_sessions").insert({store_id:selected.id,customer_id:user.id,status:"requested"});if(error)throw error;setCallState("requested");}catch{setCallState("idle");alert("Please sign in first, then try the seller call again.");}}
 
   const visible=useMemo(()=>stores.filter(s=>(area==="All Tabriz"||s.area===area)&&(category==="All"||s.category===category)&&((s.name+" "+s.products.join(" ")).toLowerCase().includes(search.toLowerCase()))),[area,category,search]);
 
@@ -24,7 +28,7 @@ export default function MarketplacePage(){
     <header className="market-nav">
       <Link className="brand" href="/"><span className="brand-mark">N</span><span>NEXORA<span className="brand-ai"> AI</span></span></Link>
       <div className="market-title"><span className="market-dot"/>TABRIZ · VIRTUAL MARKET</div>
-      <Link className="market-account" href="/auth">Sign in ↗</Link>
+      <div className="market-actions"><span className="bag">Bag {cartCount}</span><Link className="market-account" href="/auth">Sign in ↗</Link></div>
     </header>
 
     <section className="market-hero">
@@ -53,6 +57,6 @@ export default function MarketplacePage(){
 
     <section className="steps-mini"><div><span>01</span><b>Enter a store</b><p>Move through the virtual city and open a participating shop.</p></div><div><span>02</span><b>Choose & ask</b><p>Inspect products and start a voice conversation with the seller.</p></div><div><span>03</span><b>Order & deliver</b><p>Pay online and receive the real product at your address.</p></div></section>
 
-    {selected && <div className="store-modal" role="dialog" aria-modal="true"><div className="store-modal-card"><button className="close" onClick={()=>setSelected(null)}>×</button><span className="kicker">{selected.area} · LIVE STORE</span><h2>{selected.name}</h2><p>{selected.description}</p><div className="product-list">{selected.products.map((p,i)=><div key={p}><div className="product-thumb">{String(i+1).padStart(2,"0")}</div><div><b>{p}</b><small>Available · Ask seller for details</small></div><button>Add to bag</button></div>)}</div><button className="voice-call">◉ Talk to seller</button></div></div>}
+    {selected && <div className="store-modal" role="dialog" aria-modal="true"><div className="store-modal-card"><button className="close" onClick={()=>setSelected(null)}>×</button><span className="kicker">{selected.area} · LIVE STORE</span><h2>{selected.name}</h2><p>{selected.description}</p><div className="product-list">{selected.products.map((p,i)=><div key={p}><div className="product-thumb">{String(i+1).padStart(2,"0")}</div><div><b>{p}</b><small>Available · Ask seller for details</small></div><button onClick={()=>setCartCount(c=>c+1)}>Add to bag</button></div>)}</div><button className="voice-call" onClick={requestVoice}>{callState==="requesting"?"Requesting…":callState==="requested"?"Call requested ✓":"◉ Talk to seller"}</button></div></div>}
   </main>;
 }
