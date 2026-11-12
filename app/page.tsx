@@ -27,8 +27,8 @@ const copy = {
     step2Text: "Providers are checked before their resources are listed as verified.",
     step3: "A human-guided connection",
     step3Text: "Relevant options are surfaced, with human review for sensitive placements.",
-    pilot: "Starting in Dubai",
-    pilotText: "NEXORA is being prepared for a Dubai pilot, with English, Arabic, and Persian support.",
+    pilot: "Starting across Tabriz",
+    pilotText: "NEXORA is becoming a city-wide virtual marketplace for Tabriz, connecting real stores, real sellers, real products and delivery.",
     note: "NEXORA is a coordination platform, not an emergency service or medical provider. In an emergency, contact local emergency services.",
     footer: "A more connected way to care.",
     soon: "The secure request and provider portal is coming next.",
@@ -57,8 +57,8 @@ const copy = {
     step2Text: "يتم التحقق من الجهات قبل إدراج مواردها على أنها موثوقة.",
     step3: "تواصل بإشراف بشري",
     step3Text: "تُعرض الخيارات المناسبة مع مراجعة بشرية للحالات الحساسة.",
-    pilot: "البداية في دبي",
-    pilotText: "يجري إعداد NEXORA لإطلاق تجريبي في دبي بالإنجليزية والعربية والفارسية.",
+    pilot: "شروع در سراسر تبریز",
+    pilotText: "تتجه NEXORA لتصبح سوقاً افتراضياً يغطي تبريز، ويربط المتاجر والبائعين والمنتجات الحقيقية بخدمة التوصيل.",
     note: "NEXORA منصة تنسيق وليست خدمة طوارئ أو جهة طبية. في حالات الطوارئ، اتصل بخدمات الطوارئ المحلية.",
     footer: "رعاية أفضل عبر التواصل.",
     soon: "بوابة الطلبات ومقدمي الخدمات الآمنة قيد التطوير.",
@@ -88,7 +88,7 @@ const copy = {
     step3: "ارتباط با راهنمایی انسانی",
     step3Text: "گزینه‌های مناسب پیشنهاد می‌شوند و موارد حساس با نظارت انسانی پیش می‌روند.",
     pilot: "شروع از دبی",
-    pilotText: "نکسورا برای اجرای آزمایشی در دبی و با پشتیبانی فارسی، عربی و انگلیسی آماده می‌شود.",
+    pilotText: "نکسورا به یک بازار مجازی شهری برای سراسر تبریز تبدیل می‌شود؛ با فروشگاه‌های واقعی، فروشندگان واقعی، کالاهای واقعی و ارسال.",
     note: "نکسورا سامانه هماهنگی است، نه مرکز فوریت‌های پزشکی یا ارائه‌دهنده درمان. در شرایط اضطراری با خدمات اورژانس محلی تماس بگیرید.",
     footer: "مراقبت بهتر با ارتباط بیشتر.",
     soon: "درگاه امن ثبت درخواست و ارائه منابع در مرحله بعد توسعه داده می‌شود.",
@@ -114,7 +114,7 @@ export default function Home() {
           <div className="eyebrow"><span className="pulse" />{t.eyebrow}</div>
           <h1>{t.title}</h1>
           <p className="hero-intro">{t.intro}</p>
-          <div className="hero-actions"><a className="button button-primary" href="/auth">{t.request}<span>↗</span></a><a className="button button-secondary" href="/auth">{t.provide}</a></div>
+          <div className="hero-actions"><a className="button button-primary" href="/marketplace">Enter Virtual Tabriz <span>↗</span></a><a className="button button-secondary" href="/auth">{t.provide}</a></div>
           <div className="hero-footnote"><span className="shield">✳</span>{t.trusted}</div>
         </div>
         <div className="hero-art" aria-label="Abstract illustration of people and resources connecting">
@@ -124,7 +124,7 @@ export default function Home() {
           <div className="orbit-caption caption-top">PEOPLE</div><div className="orbit-caption caption-bottom">RESOURCES</div>
           <div className="spark spark-one">✦</div><div className="spark spark-two">✧</div>
         </div>
-        <div className="hero-bottom"><span>01 / 03</span><span className="hero-line" /><span>DUBAI · UAE</span></div>
+        <div className="hero-bottom"><span>01 / 03</span><span className="hero-line" /><span>TABRIZ · IRAN</span></div>
       </section>
 
       <section className="trust-strip"><div className="trust-icon">✳</div><div><h2>{t.trusted}</h2><p>{t.trustedText}</p></div><span className="trust-tag">HUMAN-LED · AI-ASSISTED</span></section>
