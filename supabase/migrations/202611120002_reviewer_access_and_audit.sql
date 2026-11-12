@@ -67,7 +67,7 @@ begin
     raise exception 'Reviewer access required';
   end if;
 
-  if p_decision not in ('approved','rejected','changes_requested') then
+  if p_decision is null or p_decision not in ('approved','rejected','changes_requested') then
     raise exception 'Invalid review decision';
   end if;
 
