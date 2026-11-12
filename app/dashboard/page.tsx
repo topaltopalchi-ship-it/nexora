@@ -61,7 +61,7 @@ export default function DashboardPage() {
 
   if(!ready) return <main className="dashboard-shell"><p>Loading your secure workspace…</p></main>;
   return <main className="dashboard-shell">
-    <header className="dashboard-header"><Link className="brand" href="/"><span className="brand-mark">N</span><span>NEXORA<span className="brand-ai"> AI</span></span></Link><div className="dashboard-user"><span>{email}</span><button onClick={signOut}>Sign out</button></div></header>
+    <header className="dashboard-header"><Link className="brand" href="/"><span className="brand-mark">N</span><span>NEXORA<span className="brand-ai"> AI</span></span></Link><div className="dashboard-user"><span>{email}</span><Link href="/network">Browse network</Link><button onClick={signOut}>Sign out</button></div></header>
     <section className="dashboard-welcome"><span className="kicker">YOUR WORKSPACE</span><h1>Welcome to NEXORA.</h1><p>Manage your support requests and the resources you can share.</p></section>
     <section className="dashboard-grid">
       <div className="dashboard-panel">
