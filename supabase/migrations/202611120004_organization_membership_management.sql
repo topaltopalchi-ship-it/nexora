@@ -30,7 +30,11 @@ begin
   ) then raise exception 'Organization membership required'; end if;
 
   return query
-    select om.user_id, om.member_role, p.display_name,\n           case when exists (select 1 from public.organization_members self\n             where self.organization_id = p_organization_id and self.user_id = auth.uid()\n               and self.member_role in ('owner','coordinator')) then u.email else null end,\n           om.created_at
+    select om.user_id, om.member_role, p.display_name,
+           case when exists (select 1 from public.organization_members self
+             where self.organization_id = p_organization_id and self.user_id = auth.uid()
+               and self.member_role in ('owner','coordinator')) then u.email else null end,
+           om.created_at
     from public.organization_members om
     join auth.users u on u.id = om.user_id
     left join public.profiles p on p.id = om.user_id
