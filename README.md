@@ -35,5 +35,12 @@ Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY after the 
 
 Initial schema: supabase/migrations/202611110001_initial_core.sql
 
-## Status
-Foundation commit: product scope, security boundaries, and initial database migration. This repository is not yet connected to a provisioned NEXORA backend or deployed hosting environment.
+## Current implementation status
+- English, Persian, and Arabic landing page, authentication, and dashboard interfaces.
+- Supabase email/password sign-up and sign-in; new accounts store their chosen language and account purpose.
+- Authenticated users can submit support requests and resources for review.
+- Row Level Security keeps personal requests private and prevents providers from self-verifying resources.
+- Supabase provisioning and trusted reviewer/server workflows are still required before a public pilot.
+- No production hosting or live AI matching engine is configured yet.
+
+See [Supabase setup and launch checklist](docs/SUPABASE_SETUP.md) before deploying.
