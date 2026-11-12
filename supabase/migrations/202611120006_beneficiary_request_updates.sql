@@ -40,7 +40,7 @@ begin
   if not exists (select 1 from public.reviewer_access where user_id = v_user and is_active = true) then
     raise exception 'Active reviewer access required';
   end if;
-  if p_decision not in ('reviewing','information_requested','closed') then
+  if p_decision is null or p_decision not in ('reviewing','information_requested','closed') then
     raise exception 'Invalid request review decision';
   end if;
   if p_message is null or char_length(trim(p_message)) < 3 or char_length(p_message) > 1000 then
