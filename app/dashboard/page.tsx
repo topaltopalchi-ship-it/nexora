@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const [resources,setResources] = useState<Row[]>([]);
   const [suggestions,setSuggestions] = useState<Suggestion[]>([]);
   const [suggestionNeedTitle,setSuggestionNeedTitle] = useState("");
-  const [category,setCategory] = useState("food");
+  const [category,setCategory] = useState<"food"|"healthcare"|"housing"|"transport"|"other">("food");
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
   const [city,setCity] = useState("Dubai");
