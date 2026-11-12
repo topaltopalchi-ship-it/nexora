@@ -43,6 +43,13 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 4. Only administrators can view pending organization verification records and approve or reject an application. Every decision requires a reason and creates an audit event.
 5. Organization membership controls which provider accounts may associate new assistance offers with that organization.
 
+### Beneficiary request tracking and private updates
+- Beneficiaries can view the status of their own requests and private messages from authorized reviewers.
+- Authorized reviewers can move a request into review, request limited clarification, or close it with a beneficiary-facing explanation.
+- A beneficiary can respond only when clarification has been requested; the response is recorded and returns the request to review.
+- Request messages are private, append-only, and readable only by the requester and active reviewers. Clients cannot directly insert or edit review messages.
+- The workflow does not automatically match resources, determine eligibility, make clinical decisions, or provide emergency response.
+
 ### Organization team management
 - Owners can invite people by email as coordinator or read-only reviewer; clients cannot grant owner privileges.
 - Invitations use a random one-time token, are stored as a hash, expire after seven days, and are bound to the invited account's confirmed email address.
