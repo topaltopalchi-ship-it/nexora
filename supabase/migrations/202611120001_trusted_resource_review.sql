@@ -1,9 +1,6 @@
 -- Trusted, server-enforced resource review for the NEXORA pilot.
 -- Only trusted database administrators may grant reviewer access.
 
--- A rejected state is distinct from a temporary suspension.
-alter type public.resource_status add value if not exists 'rejected';
-
 create table public.platform_reviewers (
   user_id uuid primary key references auth.users(id) on delete cascade,
   active boolean not null default true,
