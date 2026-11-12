@@ -7,12 +7,17 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Row = { id:string; title:string; category:string; status:string; city:string; created_at:string };
+type NeedUpdate = { id:string; actor_role:string; update_type:string; message:string; created_at:string };
 type ProviderOrganization = { id:string; name:string; verification_status:string; member_role:string };
 export default function DashboardPage() {
   const [email,setEmail] = useState("");
   const [tab,setTab] = useState<"need"|"resource">("need");
   const [needs,setNeeds] = useState<Row[]>([]);
   const [resources,setResources] = useState<Row[]>([]);
+  const [activeNeedId,setActiveNeedId] = useState("");
+  const [needUpdates,setNeedUpdates] = useState<NeedUpdate[]>([]);
+  const [needReply,setNeedReply] = useState("");
+  const [replyBusy,setReplyBusy] = useState(false);
   const [providerOrganizations,setProviderOrganizations] = useState<ProviderOrganization[]>([]);
   const [organizationId,setOrganizationId] = useState("");
   const [category,setCategory] = useState("food");
@@ -48,6 +53,37 @@ export default function DashboardPage() {
     setReady(true);
   }
   useEffect(()=>{ void load(); },[]);
+
+  async function loadNeedUpdates(needId:string) {
+    setActiveNeedId(needId);
+    const supabase = createClient();
+    const { data, error } = await supabase.from("need_updates")
+      .select("id,actor_role,update_type,message,created_at")
+      .eq("need_id", needId).order("created_at", { ascending: true });
+    if (error) { setNotice(error.message); return; }
+    setNeedUpdates((data ?? []) as NeedUpdate[]);
+  }
+
+  async function sendNeedReply(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!activeNeedId) return;
+    setReplyBusy(true); setNotice("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("respond_to_need_information", {
+        p_need_id: activeNeedId, p_message: needReply.trim()
+      });
+      if (error) throw error;
+      setNeedReply("");
+      setNotice("Your response has been sent to the review team.");
+      await load(); await loadNeedUpdates(activeNeedId);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not send your response."); }
+    finally { setReplyBusy(false); }
+  }
+
+  const needStatusLabel:Record<string,string> = {
+    open:"Submitted", reviewing:"Under review", information_requested:"Information requested",
+    matched:"Referral proposed", in_progress:"In progress", resolved:"Resolved", closed:"Closed"
+  };
 
   async function submit(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); setBusy(true); setNotice("");
@@ -112,7 +148,22 @@ export default function DashboardPage() {
       </div>
       <div className="dashboard-panel activity-panel">
         <h2>Your activity</h2><h3>Support requests <span>{needs.length}</span></h3>
-        {needs.length===0?<p className="empty-state">No requests yet.</p>:needs.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{x.category} · {x.city}</small></div><span className="status-pill">{x.status}</span></article>)}
+        {needs.length===0?<p className="empty-state">No requests yet.</p>:needs.map(x=><article className="activity-row" key={x.id}>
+          <div><strong>{x.title}</strong><small>{x.category} · {x.city} · {new Date(x.created_at).toLocaleDateString()}</small></div>
+          <button className="status-pill" onClick={()=>void loadNeedUpdates(x.id)} aria-pressed={activeNeedId===x.id}>{needStatusLabel[x.status] ?? x.status}</button>
+        </article>)}
+        {activeNeedId && <section className="need-thread" aria-label="Private request updates">
+          <h3>Request updates</h3>
+          {needUpdates.length===0?<p className="empty-state">No messages from the review team yet.</p>:needUpdates.map(item=><article className="need-message" key={item.id}>
+            <strong>{item.actor_role==="reviewer"?"NEXORA review team":"You"} · {item.update_type.replaceAll("_"," ")}</strong>
+            <p>{item.message}</p><small>{new Date(item.created_at).toLocaleString()}</small>
+          </article>)}
+          {needs.find(item=>item.id===activeNeedId)?.status==="information_requested" && <form className="auth-form" onSubmit={sendNeedReply}>
+            <label>Reply to the review team<textarea rows={3} minLength={3} maxLength={1000} required value={needReply} onChange={event=>setNeedReply(event.target.value)} placeholder="Share only the requested information. Avoid sending identity documents or detailed medical records here."/></label>
+            <button className="button button-primary" disabled={replyBusy}>{replyBusy?"Sending…":"Send response"}</button>
+          </form>}
+          <p className="dashboard-safety">This conversation is private to you and authorized reviewers. Do not use it for emergencies or send sensitive identity or medical documents.</p>
+        </section>}
         <h3 className="resources-heading">Your resources <span>{resources.length}</span></h3>
         {resources.length===0?<p className="empty-state">No resources submitted yet.</p>:resources.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{x.category} · {x.city}</small></div><span className="status-pill">{x.status}</span></article>)}
       </div>
