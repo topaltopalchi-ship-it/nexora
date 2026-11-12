@@ -39,3 +39,25 @@ Medical records, crisis cases, identity documents, exact home addresses, and med
 - Privacy notice, consent wording, retention/deletion process, UAE legal review.
 - Dubai partners for food safety, licensed healthcare referrals, and vetted accommodation.
 - Operational support and incident-response ownership.
+
+
+## Autonomous operations architecture
+
+NEXORA is designed as an independent operations platform, not a directory that waits for a person to coordinate every routine step.
+
+- **Event intake:** database triggers enqueue durable jobs when a beneficiary request is created or a resource becomes verified/changes capacity.
+- **Orchestration:** `automation_jobs` persists work, deduplicates events, retries transient failures with backoff, and recovers stale worker leases.
+- **Execution:** the Supabase Edge Function `automation-worker` claims jobs using a service-role-only RPC, runs the matching workflow, and records completion or retry state.
+- **Matching:** deterministic matching considers verified resource status, category, city, availability window, and positive quantity. It creates proposed matches only; it does not reserve stock or promise delivery.
+- **Sensitive pathways:** healthcare and housing proposals are marked `human_review_required`. No automated diagnosis, treatment, eligibility ruling, crisis response, or housing placement is allowed.
+- **Operations:** the worker must be deployed and called on a schedule. A queue without a running worker is not autonomous in production.
+
+### Worker deployment
+
+1. Apply migrations in order, including `202611120007_autonomous_workflow_engine.sql`.
+2. Deploy `supabase/functions/automation-worker/index.ts`.
+3. Set `AUTOMATION_WORKER_SECRET` as a function secret. Supabase supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the Edge Function runtime.
+4. Invoke the function on a schedule (for example, once per minute) with `Authorization: Bearer <AUTOMATION_WORKER_SECRET>`.
+5. Monitor failed jobs and queue age; configure alerting before real beneficiaries are onboarded.
+
+This first autonomous release performs deterministic resource matching and workflow orchestration. AI classification, provider confirmation, inventory reservation, automated notifications, and self-healing infrastructure are later capabilities and must be added with separate tests and permissions.

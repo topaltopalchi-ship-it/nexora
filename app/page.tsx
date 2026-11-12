@@ -31,7 +31,7 @@ const copy = {
     pilotText: "NEXORA is being prepared for a Dubai pilot, with English, Arabic, and Persian support.",
     note: "NEXORA is a coordination platform, not an emergency service or medical provider. In an emergency, contact local emergency services.",
     footer: "A more connected way to care.",
-    soon: "The secure request and provider portal is coming next.",
+    soon: "The secure portal is available for submitting support requests and offering help.",
     language: "Language",
   },
   ar: {
@@ -61,7 +61,7 @@ const copy = {
     pilotText: "يجري إعداد NEXORA لإطلاق تجريبي في دبي بالإنجليزية والعربية والفارسية.",
     note: "NEXORA منصة تنسيق وليست خدمة طوارئ أو جهة طبية. في حالات الطوارئ، اتصل بخدمات الطوارئ المحلية.",
     footer: "رعاية أفضل عبر التواصل.",
-    soon: "بوابة الطلبات ومقدمي الخدمات الآمنة قيد التطوير.",
+    soon: "البوابة الآمنة متاحة لتقديم طلبات الدعم وعرض المساعدة.",
     language: "اللغة",
   },
   fa: {
@@ -91,7 +91,7 @@ const copy = {
     pilotText: "نکسورا برای اجرای آزمایشی در دبی و با پشتیبانی فارسی، عربی و انگلیسی آماده می‌شود.",
     note: "نکسورا سامانه هماهنگی است، نه مرکز فوریت‌های پزشکی یا ارائه‌دهنده درمان. در شرایط اضطراری با خدمات اورژانس محلی تماس بگیرید.",
     footer: "مراقبت بهتر با ارتباط بیشتر.",
-    soon: "درگاه امن ثبت درخواست و ارائه منابع در مرحله بعد توسعه داده می‌شود.",
+    soon: "درگاه امن ثبت درخواست حمایت و اعلام آمادگی برای کمک فعال است.",
     language: "زبان",
   },
 } as const;
