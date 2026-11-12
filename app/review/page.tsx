@@ -92,7 +92,7 @@ export default function ReviewPage() {
       const { error } = await supabase.rpc("review_resource", {
         p_resource_id: resourceId,
         p_decision: decision,
-        p_note: notes[resourceId]?.trim() || null
+        p_note: notes[resourceId]?.trim() || ""
       });
       if (error) throw error;
       setResources(current => current.filter(item => item.id !== resourceId));
