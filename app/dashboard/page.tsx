@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Language = "en" | "fa" | "ar";
 type Row = { id:string; title:string; category:string; status:string; city:string; created_at:string };
+type Suggestion = { resource_id:string; title:string; public_summary:string; city:string; quantity:number; enough_quantity:boolean };
 
 const copy = {
   en: {
@@ -19,7 +20,7 @@ const copy = {
     submitNeed:"Submit request", submitResource:"Submit for verification", submitting:"Submitting…",
     requestSent:"Your request has been submitted.", resourceSent:"Your resource is submitted and waiting for verification.",
     activity:"Your activity", requests:"Support requests", resources:"Your resources", noRequests:"No requests yet.",
-    noResources:"No resources submitted yet.", safety:"Resources are not visible to the community until reviewed. NEXORA is not an emergency service or a healthcare provider.",
+    noResources:"No resources submitted yet.", matches:"Verified resources that may help", forNeed:"Suggestions for your latest open request", noMatches:"No verified resources match this request in your city yet.", quantityFit:"Quantity may cover your request", quantityPartial:"Provider may have a smaller quantity", safety:"Resources are not visible to the community until reviewed. NEXORA is not an emergency service or a healthcare provider.",
     language:"Language", languageSaved:"Language preference saved.", loadError:"Could not load your account. Please sign in again.",
     categories:{food:"Food",healthcare:"Healthcare",housing:"Housing",transport:"Transport",other:"Other"},
     statuses:{open:"Open",reviewing:"Reviewing",matched:"Matched",in_progress:"In progress",resolved:"Resolved",closed:"Closed",draft:"Draft",pending_review:"Pending review",verified:"Verified",reserved:"Reserved",fulfilled:"Fulfilled",expired:"Expired",suspended:"Suspended"}
@@ -33,7 +34,7 @@ const copy = {
     submitNeed:"ثبت درخواست", submitResource:"ارسال برای بررسی", submitting:"در حال ارسال…",
     requestSent:"درخواست شما ثبت شد.", resourceSent:"منبع شما ثبت شد و در انتظار تأیید است.",
     activity:"فعالیت‌های شما", requests:"درخواست‌های حمایت", resources:"منابع شما", noRequests:"هنوز درخواستی ثبت نکرده‌اید.",
-    noResources:"هنوز منبعی ثبت نکرده‌اید.", safety:"منابع تا پیش از بررسی و تأیید برای دیگران قابل مشاهده نیستند. نکسورا مرکز اورژانس یا ارائه‌دهنده خدمات درمانی نیست.",
+    noResources:"هنوز منبعی ثبت نکرده‌اید.", matches:"منابع تأییدشده‌ای که ممکن است کمک کنند", forNeed:"پیشنهاد برای آخرین درخواست باز شما", noMatches:"فعلاً منبع تأییدشده‌ای در شهر شما با این درخواست تطبیق ندارد.", quantityFit:"تعداد منبع ممکن است پاسخگوی درخواست باشد", quantityPartial:"ممکن است تعداد منبع کمتر از نیاز شما باشد", safety:"منابع تا پیش از بررسی و تأیید برای دیگران قابل مشاهده نیستند. نکسورا مرکز اورژانس یا ارائه‌دهنده خدمات درمانی نیست.",
     language:"زبان", languageSaved:"زبان انتخابی ذخیره شد.", loadError:"بارگذاری حساب کاربری ممکن نشد. لطفاً دوباره وارد شوید.",
     categories:{food:"غذا",healthcare:"درمان",housing:"مسکن",transport:"حمل‌ونقل",other:"سایر"},
     statuses:{open:"باز",reviewing:"در حال بررسی",matched:"تطبیق‌یافته",in_progress:"در حال انجام",resolved:"حل‌شده",closed:"بسته",draft:"پیش‌نویس",pending_review:"در انتظار بررسی",verified:"تأییدشده",reserved:"رزروشده",fulfilled:"انجام‌شده",expired:"منقضی",suspended:"تعلیق‌شده"}
@@ -47,7 +48,7 @@ const copy = {
     submitNeed:"إرسال الطلب", submitResource:"إرسال للتحقق", submitting:"جارٍ الإرسال…",
     requestSent:"تم إرسال طلبك.", resourceSent:"تم إرسال المورد وهو بانتظار التحقق.",
     activity:"نشاطك", requests:"طلبات الدعم", resources:"مواردك", noRequests:"لا توجد طلبات بعد.",
-    noResources:"لم يتم تقديم موارد بعد.", safety:"لن تظهر الموارد للمجتمع قبل مراجعتها. نكسورا ليست خدمة طوارئ أو جهة رعاية صحية.",
+    noResources:"لم يتم تقديم موارد بعد.", matches:"موارد موثوقة قد تساعدك", forNeed:"اقتراحات لطلبك المفتوح الأخير", noMatches:"لا توجد حالياً موارد موثوقة تطابق هذا الطلب في مدينتك.", quantityFit:"قد تكون الكمية كافية لطلبك", quantityPartial:"قد تكون كمية المورد أقل من احتياجك", safety:"لن تظهر الموارد للمجتمع قبل مراجعتها. نكسورا ليست خدمة طوارئ أو جهة رعاية صحية.",
     language:"اللغة", languageSaved:"تم حفظ تفضيل اللغة.", loadError:"تعذر تحميل حسابك. يرجى تسجيل الدخول مجدداً.",
     categories:{food:"الغذاء",healthcare:"الرعاية الصحية",housing:"السكن",transport:"النقل",other:"أخرى"},
     statuses:{open:"مفتوح",reviewing:"قيد المراجعة",matched:"تمت المطابقة",in_progress:"قيد التنفيذ",resolved:"تم الحل",closed:"مغلق",draft:"مسودة",pending_review:"بانتظار المراجعة",verified:"تم التحقق",reserved:"محجوز",fulfilled:"تم التنفيذ",expired:"منتهي",suspended:"موقوف"}
@@ -60,6 +61,8 @@ export default function DashboardPage() {
   const [tab,setTab] = useState<"need"|"resource">("need");
   const [needs,setNeeds] = useState<Row[]>([]);
   const [resources,setResources] = useState<Row[]>([]);
+  const [suggestions,setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestionNeedTitle,setSuggestionNeedTitle] = useState("");
   const [category,setCategory] = useState("food");
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
@@ -84,7 +87,20 @@ export default function DashboardPage() {
     ]);
     setIsReviewer(!reviewer.error && Boolean(reviewer.data));
     if(profile.data?.preferred_language === "fa" || profile.data?.preferred_language === "ar" || profile.data?.preferred_language === "en") setLanguage(profile.data.preferred_language);
-    if(n.error) setNotice(n.error.message); else setNeeds((n.data ?? []) as Row[]);
+    if(n.error) setNotice(n.error.message); else {
+      const ownNeeds = (n.data ?? []) as Row[];
+      setNeeds(ownNeeds);
+      const latestOpenNeed = ownNeeds.find(item => item.status === "open" || item.status === "reviewing");
+      if (latestOpenNeed) {
+        setSuggestionNeedTitle(latestOpenNeed.title);
+        const { data: suggested, error: suggestionError } = await supabase.rpc("suggest_resources_for_need", { p_need_id: latestOpenNeed.id });
+        if (suggestionError) setNotice(suggestionError.message);
+        else setSuggestions((suggested ?? []) as Suggestion[]);
+      } else {
+        setSuggestionNeedTitle("");
+        setSuggestions([]);
+      }
+    }
     if(r.error) setNotice(r.error.message); else setResources((r.data ?? []) as Row[]);
     setReady(true);
   }
@@ -151,6 +167,13 @@ export default function DashboardPage() {
       <div className="dashboard-panel activity-panel">
         <h2>{t.activity}</h2><h3>{t.requests} <span>{needs.length}</span></h3>
         {needs.length===0?<p className="empty-state">{t.noRequests}</p>:needs.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{t.categories[x.category as keyof typeof t.categories] ?? x.category} · {x.city}</small></div><span className="status-pill">{t.statuses[x.status as keyof typeof t.statuses] ?? x.status}</span></article>)}
+        {suggestionNeedTitle && <section className="suggestions-panel">
+          <h3>{t.matches}</h3><p className="empty-state">{t.forNeed}: {suggestionNeedTitle}</p>
+          {suggestions.length === 0 ? <p className="empty-state">{t.noMatches}</p> : suggestions.map(item => <article className="activity-row suggestion-row" key={item.resource_id}>
+            <div><strong>{item.title}</strong><small>{item.public_summary}</small><small>{item.city} · {item.quantity} · {item.enough_quantity ? t.quantityFit : t.quantityPartial}</small></div>
+          </article>)}
+          <p className="dashboard-safety">{language === "fa" ? "این پیشنهادها صرفاً جهت اطلاع هستند؛ هیچ منبعی خودکار رزرو یا تخصیص داده نمی‌شود." : language === "ar" ? "هذه الاقتراحات للمعلومات فقط؛ لا يتم حجز أي مورد أو تخصيصه تلقائياً." : "Suggestions are informational only. No resource is reserved or allocated automatically."}</p>
+        </section>}
         <h3 className="resources-heading">{t.resources} <span>{resources.length}</span></h3>
         {resources.length===0?<p className="empty-state">{t.noResources}</p>:resources.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{t.categories[x.category as keyof typeof t.categories] ?? x.category} · {x.city}</small></div><span className="status-pill">{t.statuses[x.status as keyof typeof t.statuses] ?? x.status}</span></article>)}
       </div>
