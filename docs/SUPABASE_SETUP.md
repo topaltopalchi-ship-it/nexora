@@ -2,26 +2,31 @@
 
 This guide provisions the backend for the NEXORA web MVP. Use a **dedicated Supabase project** for NEXORA; do not reuse a personal or unrelated production database.
 
-## 1. Create the project
+## 1. Connected Supabase project
 
-1. Create a Supabase project in a region suitable for the Dubai pilot and record its project URL.
-2. In **Project Settings → API**, copy the project URL and the publishable key.
-3. Add these values to the deployment provider as environment variables:
+The dedicated NEXORA project is already provisioned in `eu-west-1`. Its live schema has nine public tables, row-level security enabled on all nine, 17 RLS policies, and nine recorded migrations. The project URL and publishable key are prefilled in `.env.example`.
 
-   - \`NEXT_PUBLIC_SUPABASE_URL\`
-   - \`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY\`
+For the web host, configure:
 
-4. For local development, copy \`.env.example\` to \`.env.local\` and fill in those two values.
-5. Never add a service-role/secret key to a \`NEXT_PUBLIC_*\` variable, browser code, GitHub commits, or screenshots.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-## 2. Apply database migrations
+Never add a service-role/secret key to a `NEXT_PUBLIC_*` variable, browser code, GitHub commits, or screenshots.
 
-Open the Supabase SQL Editor for the NEXORA project and run the migration files in filename order:
+## 2. Reproduce the database on a fresh project
 
-1. \`supabase/migrations/202611110001_initial_core.sql\`
-2. \`supabase/migrations/202611110002_profile_trigger.sql\`
+Do not run these migrations against a database that contains unrelated application data. For a fresh, dedicated NEXORA project, apply the files in filename order:
 
-Do not run these migrations against a database that contains unrelated application data. The initial migration creates the NEXORA tables, enum types, indexes, grants, row-level security policies, and the profile creation trigger.
+1. `supabase/migrations/202611110001_initial_core.sql`
+2. `supabase/migrations/202611110002_profile_trigger.sql`
+3. `supabase/migrations/202611120000_resource_rejected_status.sql`
+4. `supabase/migrations/202611120001_trusted_resource_review.sql`
+5. `supabase/migrations/202611120002_security_and_index_hardening.sql`
+6. `supabase/migrations/202611120003_reviewer_helper_security_invoker.sql`
+7. `supabase/migrations/202611120004_read_only_resource_suggestions.sql`
+8. `supabase/migrations/202611120005_remove_quantity_assumption.sql`
+
+The live project also contains an additional hardening migration applied directly during provisioning. Its trigger-function revocations and index definitions are included in migration 5 for reproducible fresh installs.
 
 ## 3. Configure authentication
 
@@ -63,7 +68,7 @@ Use two separate test accounts:
 - Change the dashboard language to English, Persian, and Arabic; reload the page and confirm the saved language is restored.
 - Confirm that the language used for a new support request matches the selected profile language.
 
-The reviewer console is available at `/review`. The trusted-review migration adds a private reviewer allowlist, a database-enforced review function, a distinct rejected state, and an audit log. Providers cannot grant themselves reviewer access or change a pending resource to verified. Do not manually weaken RLS.
+The reviewer console is available at `/review`. The trusted-review migrations add a private reviewer allowlist, a database-enforced review function, a distinct rejected state, and an audit log. Providers cannot grant themselves reviewer access or change a pending resource to verified. The dashboard's read-only suggestion feature returns only verified resources with the same category and city for the signed-in user's own open request; it does not create matches or reserve resources. Do not manually weaken RLS.
 
 ### Provision the first trusted reviewer
 
