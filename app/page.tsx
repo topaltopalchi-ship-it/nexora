@@ -105,7 +105,7 @@ export default function Home() {
     <main dir={rtl ? "rtl" : "ltr"} className={rtl ? "rtl" : ""}>
       <header className="topbar">
         <a className="brand" href="#" aria-label="NEXORA home"><span className="brand-mark">N</span><span>NEXORA<span className="brand-ai"> AI</span></span></a>
-        <nav className="nav-links"><a href="#connect">{t.categories}</a><a href="#how">{t.how}</a><a href="#about">{t.pilot}</a></nav>
+        <nav className="nav-links"><a href="/network">{t.categories}</a><a href="#how">{t.how}</a><a href="#about">{t.pilot}</a></nav>
         <label className="language-select"><span>{t.language}</span><select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t.language}><option value="en">English</option><option value="ar">العربية</option><option value="fa">فارسی</option></select></label>
       </header>
 
@@ -114,7 +114,7 @@ export default function Home() {
           <div className="eyebrow"><span className="pulse" />{t.eyebrow}</div>
           <h1>{t.title}</h1>
           <p className="hero-intro">{t.intro}</p>
-          <div className="hero-actions"><a className="button button-primary" href="/auth">{t.request}<span>↗</span></a><a className="button button-secondary" href="/auth">{t.provide}</a></div>
+          <div className="hero-actions"><a className="button button-primary" href="/auth">{t.request}<span>↗</span></a><a className="button button-secondary" href="/dashboard">{t.provide}</a></div>
           <div className="hero-footnote"><span className="shield">✳</span>{t.trusted}</div>
         </div>
         <div className="hero-art" aria-label="Abstract illustration of people and resources connecting">
