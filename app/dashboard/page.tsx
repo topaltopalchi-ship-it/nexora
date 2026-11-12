@@ -7,11 +7,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Row = { id:string; title:string; category:string; status:string; city:string; created_at:string };
+type ProviderOrganization = { id:string; name:string; verification_status:string; member_role:string };
 export default function DashboardPage() {
   const [email,setEmail] = useState("");
   const [tab,setTab] = useState<"need"|"resource">("need");
   const [needs,setNeeds] = useState<Row[]>([]);
   const [resources,setResources] = useState<Row[]>([]);
+  const [providerOrganizations,setProviderOrganizations] = useState<ProviderOrganization[]>([]);
+  const [organizationId,setOrganizationId] = useState("");
   const [category,setCategory] = useState("food");
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
@@ -35,12 +38,13 @@ export default function DashboardPage() {
     const {data:{user},error} = await supabase.auth.getUser();
     if(error || !user) { router.replace("/auth"); return; }
     setEmail(user.email ?? "");
-    const [n,r] = await Promise.all([
+    const [n,r,orgs] = await Promise.all([
       supabase.from("needs").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
       supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false})
     ]);
     if(n.error) setNotice(n.error.message); else setNeeds((n.data ?? []) as Row[]);
     if(r.error) setNotice(r.error.message); else setResources((r.data ?? []) as Row[]);
+    if(orgs.error) setNotice(orgs.error.message); else setProviderOrganizations((orgs.data ?? []) as ProviderOrganization[]);
     setReady(true);
   }
   useEffect(()=>{ void load(); },[]);
@@ -56,7 +60,7 @@ export default function DashboardPage() {
         if(error) throw error;
       } else {
         const categoryForResource = resourceType === "meals" || resourceType === "food_parcels" ? "food" : resourceType === "medical_consultation" || resourceType === "medicine" ? "healthcare" : resourceType === "accommodation" ? "housing" : "other";
-        const {error} = await supabase.from("resources").insert({provider_id:user.id,category:categoryForResource,resource_type:resourceType,provider_type:providerType,title:title.trim(),public_summary:description.trim(),city,quantity:Number(quantity),unit,available_until:availableUntil ? new Date(availableUntil).toISOString() : null,expiry_date:expiryDate || null,status:"pending_review"});
+        const {error} = await supabase.from("resources").insert({provider_id:user.id,organization_id:organizationId || null,category:categoryForResource,resource_type:resourceType,provider_type:providerType,title:title.trim(),public_summary:description.trim(),city,quantity:Number(quantity),unit,available_until:availableUntil ? new Date(availableUntil).toISOString() : null,expiry_date:expiryDate || null,status:"pending_review"});
         if(error) throw error;
       }
       setTitle(""); setDescription(""); setUrgency("3"); setPeopleCount("1"); setQuantity("1"); setAvailableUntil(""); setExpiryDate(""); setNotice(tab === "need" ? "Your request has been submitted." : "Your resource is submitted and waiting for verification.");
@@ -87,6 +91,7 @@ export default function DashboardPage() {
           <label>{tab==="need"?"What support do you need?":"What can you provide?"}<input value={title} onChange={e=>setTitle(e.target.value)} required minLength={4} maxLength={120} placeholder={tab==="need"?"e.g. Grocery support":"e.g. Sealed food parcels"}/></label>
           <label>Details<textarea value={description} onChange={e=>setDescription(e.target.value)} required minLength={10} maxLength={1000} rows={4} placeholder="Share only the information needed. Do not include medical records or sensitive identity details."/></label>
           {tab === "resource" && <>
+            {providerOrganizations.length > 0 && <label>Submitting on behalf of (optional)<select value={organizationId} onChange={e=>setOrganizationId(e.target.value)}><option value="">Personal / individual offer</option>{providerOrganizations.map(org=><option key={org.id} value={org.id}>{org.name} — {org.verification_status === "verified" ? "verified" : "organization pending verification"}</option>)}</select><small>Organization membership is checked by the database. Offers still require separate review.</small></label>}
             <label>Quantity or capacity<input type="number" min="1" max="10000" value={quantity} onChange={e=>setQuantity(e.target.value)} required/></label>
             <label>Unit<select value={unit} onChange={e=>setUnit(e.target.value)}><option value="items">Items</option><option value="meals">Meals</option><option value="food_parcels">Food parcels</option><option value="people">People / places</option><option value="consultations">Consultations</option><option value="hours">Hours</option><option value="sets">Sets</option></select></label>
             <label>Available until (optional)<input type="datetime-local" value={availableUntil} onChange={e=>setAvailableUntil(e.target.value)}/></label>
