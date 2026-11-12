@@ -86,10 +86,8 @@ export default function ProviderPage() {
       if (organizationResult.error) throw organizationResult.error;
       const orgRows = (organizationResult.data ?? []) as Organization[];
       setOrganizations(orgRows);
-      if (!teamOrgId) {
-        const ownerOrg = orgRows.find(org => org.member_role === "owner");
-        if (ownerOrg) setTeamOrgId(ownerOrg.id);
-      }
+      const ownerOrg = orgRows.find(org => org.member_role === "owner");
+      if (ownerOrg) setTeamOrgId(current => current || ownerOrg.id);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load provider activity.");
     } finally {
