@@ -11,6 +11,7 @@ type Organization = {
   registration_reference: string; contact_email: string | null; website: string | null;
   created_at: string;
 };
+type Need = { id:string; title:string; category:string; description:string; city:string; urgency:number; people_count:number; preferred_language:string; status:string; created_at:string };
 type Offer = {
   id: string;
   title: string;
@@ -28,6 +29,8 @@ type Offer = {
 
 export default function ReviewPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [needs, setNeeds] = useState<Need[]>([]);
+  const [needReason, setNeedReason] = useState<Record<string,string>>({});
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [organizationReason, setOrganizationReason] = useState<Record<string,string>>({});
@@ -58,11 +61,19 @@ export default function ReviewPage() {
       if (organizationError) setNotice(organizationError.message);
       else setOrganizations((pendingOrganizations ?? []) as Organization[]);
     }
-    const { data, error } = await supabase.from("resources")
-      .select("id,title,category,resource_type,provider_type,public_summary,city,quantity,unit,available_until,expiry_date,created_at")
-      .eq("status", "pending_review").order("created_at", { ascending: true });
+    const [{ data, error }, needResult] = await Promise.all([
+      supabase.from("resources")
+        .select("id,title,category,resource_type,provider_type,public_summary,city,quantity,unit,available_until,expiry_date,created_at")
+        .eq("status", "pending_review").order("created_at", { ascending: true }),
+      supabase.from("needs")
+        .select("id,title,category,description,city,urgency,people_count,preferred_language,status,created_at")
+        .in("status", ["open","reviewing","information_requested"])
+        .order("urgency", { ascending: false }).order("created_at", { ascending: true })
+    ]);
     if (error) setNotice(error.message);
     else setOffers((data ?? []) as Offer[]);
+    if (needResult.error) setNotice(needResult.error.message);
+    else setNeeds((needResult.data ?? []) as Need[]);
     setReady(true);
   }
 
@@ -83,6 +94,23 @@ export default function ReviewPage() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not review this organization.");
     } finally { setBusy(null); }
+  }
+
+  async function decideNeed(id:string, decision:"reviewing"|"information_requested"|"closed") {
+    const note = (needReason[id] ?? "").trim();
+    if (note.length < 3) { setNotice("Add a beneficiary-facing message (at least 3 characters)."); return; }
+    setBusy(id); setNotice("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("review_beneficiary_request", {
+        p_need_id:id, p_decision:decision, p_message:note
+      });
+      if (error) throw error;
+      setNeeds(current => current.filter(item => item.id !== id));
+      setNeedReason(current => ({...current,[id]:""}));
+      setNotice(decision === "information_requested" ? "Information request sent to beneficiary." : decision === "closed" ? "Request closed." : "Request moved to review.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not update this request."); }
+    finally { setBusy(null); }
   }
 
   async function decide(id: string, decision: "approved"|"rejected"|"changes_requested") {
@@ -115,6 +143,30 @@ export default function ReviewPage() {
       <p>Verify the provider and the offer before it becomes visible to the community.</p>
     </section>
     {notice && <p className="form-message" role="status">{notice}</p>}
+    <section className="review-list" aria-label="Beneficiary support requests">
+      <h2>Beneficiary support requests</h2>
+      <p className="dashboard-safety">Request details are private. Review only the minimum information needed; do not request identity documents or detailed medical records through this channel.</p>
+      {needs.length===0 ? <div className="dashboard-panel"><p className="empty-state">No beneficiary requests are waiting for review.</p></div> :
+        needs.map(need=><article className="dashboard-panel review-card" key={need.id}>
+          <div className="review-card-head"><div><span className="kicker">PRIVATE SUPPORT REQUEST</span><h2>{need.title}</h2><p>{need.category} · {need.city}</p></div><span className="status-pill">{need.status.replaceAll("_"," ")}</span></div>
+          <p className="review-summary">{need.description}</p>
+          <dl className="review-meta">
+            <div><dt>Urgency</dt><dd>{need.urgency}/5 (not emergency triage)</dd></div>
+            <div><dt>People</dt><dd>{need.people_count}</dd></div>
+            <div><dt>Preferred language</dt><dd>{need.preferred_language.toUpperCase()}</dd></div>
+            <div><dt>Submitted</dt><dd>{new Date(need.created_at).toLocaleString()}</dd></div>
+          </dl>
+          <label className="review-reason">Message to beneficiary (required)
+            <textarea rows={3} minLength={3} maxLength={1000} value={needReason[need.id] ?? ""} onChange={event=>setNeedReason(current=>({...current,[need.id]:event.target.value}))} placeholder="Explain next steps or specify the minimum additional information needed."/>
+          </label>
+          <div className="review-actions">
+            <button className="button button-primary" disabled={busy===need.id} onClick={()=>void decideNeed(need.id,"reviewing")}>Continue review</button>
+            <button className="review-secondary" disabled={busy===need.id} onClick={()=>void decideNeed(need.id,"information_requested")}>Request information</button>
+            <button className="review-danger" disabled={busy===need.id} onClick={()=>void decideNeed(need.id,"closed")}>Close request</button>
+          </div>
+        </article>)
+      }
+    </section>
     {isAdmin && <section className="review-list" aria-label="Pending organization verification">
       <h2>Organization verification</h2>
       {organizations.length === 0 ? <div className="dashboard-panel"><p className="empty-state">No organizations are waiting for administrator verification.</p></div> :
