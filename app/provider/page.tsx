@@ -77,13 +77,19 @@ export default function ProviderPage() {
           .select("id,status,created_at")
           .eq("provider_id", user.id)
           .order("created_at", { ascending: false }),
+        supabase.rpc("my_provider_organizations"),
       ]);
       if (offerResult.error) throw offerResult.error;
       if (matchResult.error) throw matchResult.error;
       setOffers((offerResult.data ?? []) as Offer[]);
       setMatches((matchResult.data ?? []) as Match[]);
       if (organizationResult.error) throw organizationResult.error;
-      setOrganizations((organizationResult.data ?? []) as Organization[]);
+      const orgRows = (organizationResult.data ?? []) as Organization[];
+      setOrganizations(orgRows);
+      if (!teamOrgId) {
+        const ownerOrg = orgRows.find(org => org.member_role === "owner");
+        if (ownerOrg) setTeamOrgId(ownerOrg.id);
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load provider activity.");
     } finally {
