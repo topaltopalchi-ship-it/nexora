@@ -16,3 +16,20 @@ comment on column public.resources.resource_type is
   'Structured type of assistance offered; sensitive offers require additional human verification.';
 comment on column public.resources.expiry_date is
   'Optional expiry date for perishable or time-limited donated goods; never implies suitability or approval.';
+
+-- Enforce provider-type guardrails in the database as well as in the form.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'resources_sensitive_provider_check'
+      and conrelid = 'public.resources'::regclass
+  ) then
+    alter table public.resources
+      add constraint resources_sensitive_provider_check check (
+        (resource_type <> 'medicine' or provider_type = 'pharmacy')
+        and (resource_type <> 'medical_consultation' or provider_type = 'healthcare_provider')
+        and (resource_type <> 'accommodation' or provider_type in ('accommodation_provider','charity'))
+      );
+  end if;
+end $$;
