@@ -36,6 +36,13 @@ It is not a marketplace, e-commerce product, virtual shopping environment, or ga
 3. Explain why each resource is suggested and show when its information was last verified.
 4. Never treat a score as a guarantee of eligibility or service availability.
 
+### Organization onboarding and verification
+1. A provider submits an organization name, service area, registration/authorization reference, and optional official contact details.
+2. The submitting account becomes the initial organization owner through an atomic database operation; no client can self-assign membership or verification.
+3. The application remains pending until an active NEXORA administrator independently checks the legal entity and relevant authorizations.
+4. Only administrators can view pending organization verification records and approve or reject an application. Every decision requires a reason and creates an audit event.
+5. Organization membership controls which provider accounts may associate new assistance offers with that organization.
+
 ### Reviewer access and offer decisions\n- Reviewer accounts are provisioned manually by a trusted Supabase project administrator in `reviewer_access`; users cannot grant themselves access.\n- The `/review` queue is restricted by row-level security and a server-side database function.\n- Every approve, reject, or request-changes action requires a reason and creates an audit event.\n- Approval changes a pending offer to verified; rejection suspends it; requested changes return it to draft.\n\n### Human review
 1. Sensitive referrals enter a restricted reviewer queue.
 2. Reviewers see only the information necessary to make the referral decision.
