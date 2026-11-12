@@ -7,11 +7,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Row = { id:string; title:string; category:string; status:string; city:string; created_at:string };
+type Match = { id:string; status:string; human_review_required:boolean; need_id:string; resource_id:string; resource?: { title:string; city:string; category:string } };
 export default function DashboardPage() {
   const [email,setEmail] = useState("");
   const [tab,setTab] = useState<"need"|"resource">("need");
   const [needs,setNeeds] = useState<Row[]>([]);
   const [resources,setResources] = useState<Row[]>([]);
+  const [matches,setMatches] = useState<Match[]>([]);
   const [category,setCategory] = useState("food");
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
@@ -26,12 +28,14 @@ export default function DashboardPage() {
     const {data:{user},error} = await supabase.auth.getUser();
     if(error || !user) { router.replace("/auth"); return; }
     setEmail(user.email ?? "");
-    const [n,r] = await Promise.all([
+    const [n,r,m] = await Promise.all([
       supabase.from("needs").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
-      supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false})
+      supabase.from("resources").select("id,title,category,status,city,created_at").order("created_at",{ascending:false}),
+      supabase.from("matches").select("id,status,human_review_required,need_id,resource_id,resources(title,city,category)").order("created_at",{ascending:false})
     ]);
     if(n.error) setNotice(n.error.message); else setNeeds((n.data ?? []) as Row[]);
     if(r.error) setNotice(r.error.message); else setResources((r.data ?? []) as Row[]);
+    if(m.error) setNotice(m.error.message); else setMatches((m.data ?? []) as unknown as Match[]);
     setReady(true);
   }
   useEffect(()=>{ void load(); },[]);
@@ -78,6 +82,8 @@ export default function DashboardPage() {
       <div className="dashboard-panel activity-panel">
         <h2>Your activity</h2><h3>Support requests <span>{needs.length}</span></h3>
         {needs.length===0?<p className="empty-state">No requests yet.</p>:needs.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{x.category} · {x.city}</small></div><span className="status-pill">{x.status}</span></article>)}
+        <h3 className="resources-heading">Potential matches <span>{matches.length}</span></h3>
+        {matches.length===0?<p className="empty-state">No matches yet. Verified resources will appear here when a trusted matching workflow finds a fit.</p>:matches.map(x=><article className="activity-row" key={x.id}><div><strong>{x.resource?.title ?? "Resource match"}</strong><small>{x.resource?.category ?? "—"} · {x.resource?.city ?? "—"} · {x.human_review_required?"Human review required":"Review complete"}</small></div><span className="status-pill">{x.status}</span></article>)}
         <h3 className="resources-heading">Your resources <span>{resources.length}</span></h3>
         {resources.length===0?<p className="empty-state">No resources submitted yet.</p>:resources.map(x=><article className="activity-row" key={x.id}><div><strong>{x.title}</strong><small>{x.category} · {x.city}</small></div><span className="status-pill">{x.status}</span></article>)}
       </div>
